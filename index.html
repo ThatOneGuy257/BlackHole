@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1UFGWcJqFG5AX9LVHjsVCsk3HSN/2mm4poxGBZEqUFc='; style-src 'sha256-mllwCLeRAxsF4lV0955oJ9RaSeUGlqGZ/zD6eMFHT+Y='; img-src 'self'; connect-src https://ntfy.sh; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GPdjjAL/U+UfkVrqWuK1dpH5M9VjEq4R8P2xhg9NLnw='; style-src 'sha256-NfKfUcS1oxWImPxI2Pke7OBCoAWuLVmyq6RjI6kPRHo='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -174,12 +174,32 @@ button.armed { background: #5a1420; border-color: var(--red); color: #fff; }
 label.check { display: flex; gap: 8px; align-items: center; margin: 8px 0 0; font-size: 13px; letter-spacing: 0; color: var(--ink); cursor: pointer; }
 label.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--orange); flex: none; }
 #nt-topic { margin: 0; }
+
+/* simplified panel: big add buttons, folding sections */
+.actions { display: flex; gap: 8px; }
+.actions button { flex: 1; padding: 12px 10px; font-size: 14px; }
+.fold-head { display: flex; align-items: center; gap: 8px; }
+.fold-toggle {
+  flex: 1; display: flex; align-items: center; gap: 8px; text-align: left;
+  background: none; border: 0; box-shadow: none; padding: 4px 0;
+  color: var(--cyan); font-size: 12px; letter-spacing: 2px;
+}
+.fold-toggle:hover { background: none; color: #fff; }
+.fold-toggle:active { transform: none; }
+.fold-toggle .chev { display: inline-block; width: 10px; transition: transform .15s; }
+.fold-toggle.closed .chev { transform: rotate(-90deg); }
+.t-mini { font-weight: bold; color: var(--orange); letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.timer.paused .t-mini { color: var(--quiet); }
+button.mini { padding: 5px 10px; box-shadow: none; }
+#tm-body, #orbit-body { margin-top: 8px; }
+.tools .sub { margin-top: 12px; }
+.tools .sub:first-of-type { margin-top: 4px; }
 </style>
 </head>
 <body>
 <header class="bar">
   <h1>BLACK HOLE <span>// TASK ORBIT</span></h1>
-  <p class="hint">Closer to the center = more urgent. Click a task or planet to open it.</p>
+  <p class="hint">Closer to the center = more urgent. Tap a planet to zoom in.</p>
 </header>
 <main>
   <section class="space-wrap" aria-label="Task orbit view">
@@ -243,31 +263,100 @@ label.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--or
         <button type="button" class="danger" id="d-delete">DELETE</button>
       </div>
     </section>
+    <div class="actions">
+      <button type="button" class="primary" id="add-task-btn">+ TASK</button>
+      <button type="button" id="add-group-btn">+ GROUP</button>
+    </div>
+
+    <section class="panel detail" id="new-task-panel" hidden>
+      <div class="detail-head">
+        <h2>NEW TASK</h2>
+        <button type="button" class="close" id="n-close" aria-label="Close new task">X</button>
+      </div>
+      <form id="new-form" autocomplete="off">
+        <label>TITLE<input id="n-title" maxlength="120"></label>
+        <label>GROUP<select id="n-group"></select></label>
+        <label>NOTES <em>(optional)</em><textarea id="n-notes" rows="2" maxlength="4000"></textarea></label>
+        <label>DEADLINE <em>(optional)</em><input id="n-deadline" type="datetime-local"></label>
+        <p class="msg err" id="n-err" hidden></p>
+        <button type="button" class="primary wide" id="n-launch">LAUNCH INTO ORBIT</button>
+      </form>
+    </section>
+
+    <section class="panel detail" id="new-group-panel" hidden>
+      <div class="detail-head">
+        <h2>NEW GROUP</h2>
+        <button type="button" class="close" id="g-close" aria-label="Close new group">X</button>
+      </div>
+      <form id="group-form" autocomplete="off">
+        <label>NAME<input id="g-name" maxlength="60" placeholder="e.g. Class 1"></label>
+        <fieldset class="swatches" id="g-colors"><legend>COLOR</legend></fieldset>
+        <p class="msg err" id="g-err" hidden></p>
+        <button type="button" class="primary wide" id="g-create">FORM PLANET</button>
+      </form>
+    </section>
+
     <section class="panel timer" id="timer-panel">
-      <h2>FOCUS TIMER</h2>
-      <div class="clock">
-        <span class="t-phase" id="tm-phase">READY</span>
-        <span class="t-time" id="tm-time" role="timer" aria-live="off">25:00</span>
-        <span class="t-round" id="tm-round"></span>
+      <div class="fold-head">
+        <button type="button" class="fold-toggle" id="tm-toggle" aria-expanded="true" aria-controls="tm-body"><span class="chev" aria-hidden="true">v</span>FOCUS TIMER</button>
+        <span class="t-mini" id="tm-mini">25:00</span>
+        <button type="button" class="primary mini" id="tm-quick">START</button>
       </div>
-      <label>WORKING ON <em>(optional, gets a check-in per session)</em><select id="tm-task"></select></label>
-      <div class="row">
-        <button type="button" class="primary" id="tm-start">LAUNCH ASTRONAUT</button>
-        <button type="button" id="tm-pause">PAUSE</button>
-        <button type="button" id="tm-skip">SKIP</button>
-        <button type="button" class="danger" id="tm-stop">STOP</button>
-      </div>
-      <details class="lengths">
-        <summary>LENGTHS</summary>
-        <div class="grid2">
-          <label>WORK (MIN)<input id="tm-work" type="number" min="1" max="180" inputmode="numeric"></label>
-          <label>BREAK (MIN)<input id="tm-short" type="number" min="1" max="60" inputmode="numeric"></label>
-          <label>LONG BREAK (MIN)<input id="tm-long" type="number" min="1" max="120" inputmode="numeric"></label>
-          <label>LONG BREAK EVERY<input id="tm-every" type="number" min="1" max="12" inputmode="numeric"></label>
+      <div id="tm-body">
+        <div class="clock">
+          <span class="t-phase" id="tm-phase">READY</span>
+          <span class="t-time" id="tm-time" role="timer" aria-live="off">25:00</span>
+          <span class="t-round" id="tm-round"></span>
         </div>
+        <label>WORKING ON <em>(optional, gets a check-in per session)</em><select id="tm-task"></select></label>
+        <div class="row">
+          <button type="button" class="primary" id="tm-start">LAUNCH ASTRONAUT</button>
+          <button type="button" id="tm-pause">PAUSE</button>
+          <button type="button" id="tm-skip">SKIP</button>
+          <button type="button" class="danger" id="tm-stop">STOP</button>
+        </div>
+        <details class="lengths">
+          <summary>LENGTHS</summary>
+          <div class="grid2">
+            <label>WORK (MIN)<input id="tm-work" type="number" min="1" max="180" inputmode="numeric"></label>
+            <label>BREAK (MIN)<input id="tm-short" type="number" min="1" max="60" inputmode="numeric"></label>
+            <label>LONG BREAK (MIN)<input id="tm-long" type="number" min="1" max="120" inputmode="numeric"></label>
+            <label>LONG BREAK EVERY<input id="tm-every" type="number" min="1" max="12" inputmode="numeric"></label>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="fold-head">
+        <button type="button" class="fold-toggle" id="orbit-toggle" aria-expanded="true" aria-controls="orbit-body"><span class="chev" aria-hidden="true">v</span>IN ORBIT <span class="count" id="orbit-count">0</span></button>
+      </div>
+      <div id="orbit-body">
+        <ul class="list" id="orbit-list"></ul>
+        <p class="empty" id="orbit-empty">Nothing in orbit. Press + TASK to launch one.</p>
+      </div>
+    </section>
+
+    <section class="panel lost" id="lost-panel" hidden>
+      <h2>BEYOND THE HORIZON <span class="count" id="lost-count">0</span></h2>
+      <ul class="list" id="lost-list"></ul>
+      <p class="empty" id="lost-empty" hidden>Nothing swallowed.</p>
+    </section>
+
+    <section class="panel">
+      <details>
+        <summary>DONE <span class="count" id="done-count">0</span></summary>
+        <ul class="list" id="done-list"></ul>
       </details>
-      <details class="lengths" id="nt-box">
-        <summary>PHONE ALERTS (NTFY)</summary>
+    </section>
+
+    <section class="panel tools">
+      <details id="more-box">
+        <summary>MORE</summary>
+        <p class="sub">ALERTS ON THIS DEVICE</p>
+        <div class="row"><button type="button" id="alerts">ENABLE ALERTS</button></div>
+
+        <p class="sub">PHONE ALERTS (NTFY)</p>
         <ol class="help">
           <li>Install the free ntfy app on your phone.</li>
           <li>In the app, subscribe to this topic on ntfy.sh:</li>
@@ -283,70 +372,23 @@ label.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--or
           <button type="button" id="nt-new">NEW TOPIC</button>
         </div>
         <p class="msg" id="nt-status" hidden></p>
-        <p class="fine">Timer alerts say only "session done" or "break over". Deadline alerts include the task's name and group. Your topic works like a password: anyone who knows it can read these alerts, so keep it to yourself. Deadline alerts are scheduled up to 3 days ahead, so open the app every couple of days to keep them coming.</p>
-      </details>
-    </section>
+        <p class="fine">Timer alerts say only "session done" or "break over". Deadline alerts include the task's name and group. Your topic works like a password: anyone who knows it can read these alerts. Deadline alerts are scheduled up to 3 days ahead, so open the app every couple of days.</p>
 
-    <section class="panel">
-      <h2>NEW TASK</h2>
-      <form id="new-form" autocomplete="off">
-        <label>TITLE<input id="n-title" maxlength="120"></label>
-        <label>GROUP<select id="n-group"></select></label>
-        <label>NOTES <em>(optional)</em><textarea id="n-notes" rows="2" maxlength="4000"></textarea></label>
-        <label>DEADLINE <em>(optional)</em><input id="n-deadline" type="datetime-local"></label>
-        <p class="msg err" id="n-err" hidden></p>
-        <button type="button" class="primary wide" id="n-launch">LAUNCH INTO ORBIT</button>
-      </form>
-    </section>
-
-    <section class="panel">
-      <details id="new-group-box">
-        <summary>NEW GROUP</summary>
-        <form id="group-form" autocomplete="off">
-          <label>NAME<input id="g-name" maxlength="60" placeholder="e.g. Class 1"></label>
-          <fieldset class="swatches" id="g-colors"><legend>COLOR</legend></fieldset>
-          <p class="msg err" id="g-err" hidden></p>
-          <button type="button" class="primary wide" id="g-create">FORM PLANET</button>
-        </form>
-      </details>
-    </section>
-
-
-
-    <section class="panel">
-      <h2>IN ORBIT <span class="count" id="orbit-count">0</span></h2>
-      <ul class="list" id="orbit-list"></ul>
-      <p class="empty" id="orbit-empty">Nothing in orbit. Launch a task above.</p>
-    </section>
-
-    <section class="panel lost">
-      <h2>BEYOND THE HORIZON <span class="count" id="lost-count">0</span></h2>
-      <ul class="list" id="lost-list"></ul>
-      <p class="empty" id="lost-empty">Nothing swallowed. Keep it that way.</p>
-    </section>
-
-    <section class="panel">
-      <details>
-        <summary>DONE <span class="count" id="done-count">0</span></summary>
-        <ul class="list" id="done-list"></ul>
-      </details>
-    </section>
-
-    <section class="panel tools">
-      <div class="row">
-        <button type="button" id="export">EXPORT</button>
-        <button type="button" id="import">IMPORT</button>
-        <button type="button" id="alerts">ENABLE ALERTS</button>
-      </div>
-      <input type="file" id="import-file" accept="application/json,.json" hidden>
-      <div class="confirm" id="import-confirm" hidden>
-        <p id="import-confirm-text"></p>
+        <p class="sub">BACKUP</p>
         <div class="row">
-          <button type="button" class="danger" id="import-yes">REPLACE</button>
-          <button type="button" id="import-no">CANCEL</button>
+          <button type="button" id="export">EXPORT</button>
+          <button type="button" id="import">IMPORT</button>
         </div>
-      </div>
-      <p class="fine">Pull = 85% deadline + 15% neglect. Neglect maxes out after 7 days without a check-in or a ticked step. A task reaches the center at its deadline. A planet orbits at the average pull of its tasks; a moon more urgent than its planet gets dragged toward the black hole. Tasks are saved only in this browser on this computer, and this page can't connect to the internet.</p>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+        <div class="confirm" id="import-confirm" hidden>
+          <p id="import-confirm-text"></p>
+          <div class="row">
+            <button type="button" class="danger" id="import-yes">REPLACE</button>
+            <button type="button" id="import-no">CANCEL</button>
+          </div>
+        </div>
+        <p class="fine">Pull = 85% deadline + 15% neglect (7 days). A task reaches the center at its deadline. Tasks are saved only in this browser on this device. The page talks to nothing on the internet except ntfy.sh, and only if phone alerts are on.</p>
+      </details>
     </section>
   </aside>
 </main>
@@ -732,7 +774,7 @@ function renderLists() {
   $('#lost-count').textContent = lost.length;
   $('#done-count').textContent = done.length;
   $('#orbit-empty').hidden = rows.length > 0;
-  $('#lost-empty').hidden = lost.length > 0;
+  $('#lost-panel').hidden = lost.length === 0;
   if (typeof refreshTimerTasks === 'function') refreshTimerTasks();
 }
 
@@ -810,6 +852,7 @@ function setMsg(el, text, kind) {
 }
 
 function select(type, id) {
+  const closingGroup = type === 'group' && isSel(type, id);
   if (type && isSel(type, id)) { type = null; id = null; } // clicking the open one closes it
   const exists = type === 'task' ? taskById(id) : type === 'group' ? groupById(id) : null;
   sel = exists ? { type, id } : null;
@@ -820,6 +863,8 @@ function select(type, id) {
     const panel = sel.type === 'task' ? $('#detail') : $('#gdetail');
     panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
+  if (sel && sel.type === 'group') zoomTo(sel.id);
+  if (closingGroup) zoomOut();
 }
 
 // ---------------------------------------------------------------- task panel
@@ -1041,7 +1086,7 @@ function updateGroupStats() {
   line(plural(n('orbit'), 'moon') + ' in orbit · ' + n('swallowed') + ' swallowed · ' + n('done') + ' done');
 }
 
-$('#gd-close').addEventListener('click', () => select(null));
+$('#gd-close').addEventListener('click', () => { select(null); zoomOut(); });
 
 $('#gd-save').addEventListener('click', () => {
   const g = selGroup(); if (!g) return;
@@ -1057,10 +1102,34 @@ $('#gd-save').addEventListener('click', () => {
 
 $('#gd-add').addEventListener('click', () => {
   const g = selGroup(); if (!g) return;
-  $('#n-group').value = g.id;
-  $('#n-title').focus();
-  $('#n-title').scrollIntoView({ block: 'center' });
+  openNewTask(g.id);
 });
+
+// The two add buttons open their forms; launching or closing hides them again.
+function openNewTask(groupId) {
+  $('#new-group-panel').hidden = true;
+  $('#new-task-panel').hidden = false;
+  if (groupId) $('#n-group').value = groupId;
+  setMsg($('#n-err'), '');
+  $('#new-task-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  $('#n-title').focus();
+}
+function openNewGroup() {
+  $('#new-task-panel').hidden = true;
+  $('#new-group-panel').hidden = false;
+  setMsg($('#g-err'), '');
+  $('#new-group-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  $('#g-name').focus();
+}
+$('#add-task-btn').addEventListener('click', () => {
+  if ($('#new-task-panel').hidden) openNewTask(selGroup() ? selGroup().id : null);
+  else $('#new-task-panel').hidden = true;
+});
+$('#add-group-btn').addEventListener('click', () => {
+  if ($('#new-group-panel').hidden) openNewGroup(); else $('#new-group-panel').hidden = true;
+});
+$('#n-close').addEventListener('click', () => { $('#new-task-panel').hidden = true; });
+$('#g-close').addEventListener('click', () => { $('#new-group-panel').hidden = true; });
 
 $('#gd-delete').addEventListener('click', () => {
   const g = selGroup(); if (!g) return;
@@ -1088,6 +1157,28 @@ function removeGroup(g, withTasks) {
   select(null);
   toast(withTasks ? 'Group and its tasks deleted.' : 'Group deleted. Its tasks now orbit on their own.', true);
 }
+
+// ---------------------------------------------------------------- folding sections
+const FOLD_KEY = 'blackhole.folds.v1';
+let folds = {};
+try { folds = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}') || {}; } catch (e) { folds = {}; }
+function setupFold(btnSel, bodySel, key) {
+  const btn = $(btnSel), body = $(bodySel);
+  const apply = (open) => {
+    body.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    btn.classList.toggle('closed', !open);
+  };
+  apply(folds[key] !== false);
+  btn.addEventListener('click', () => {
+    const open = body.hidden;
+    apply(open);
+    folds[key] = open;
+    try { localStorage.setItem(FOLD_KEY, JSON.stringify(folds)); } catch (e) { /* ignore */ }
+  });
+}
+setupFold('#tm-toggle', '#tm-body', 'timer');
+setupFold('#orbit-toggle', '#orbit-body', 'orbit');
 
 // ---------------------------------------------------------------- new task / new group
 // Plain click handlers, not form submission: some viewers (like preview
@@ -1117,6 +1208,7 @@ function launch() {
   save();
   renderLists();
   if (sel && sel.type === 'group') updateGroupStats();
+  $('#new-task-panel').hidden = true;
   toast('"' + title + '" launched' + (g ? ' into orbit around ' + g.name : ' into orbit') + '.', true);
 }
 
@@ -1136,7 +1228,8 @@ function createGroup() {
   refreshGroupSelects();
   $('#n-group').value = g.id;
   renderLists();
-  toast('Planet "' + name + '" formed. It is now picked in NEW TASK, so new tasks join it.', true);
+  $('#new-group-panel').hidden = true;
+  toast('Planet "' + name + '" formed. Press + TASK to give it moons.', true);
 }
 
 // ---------------------------------------------------------------- export / import / alerts
@@ -1225,7 +1318,7 @@ window.addEventListener('storage', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
-  if (e.key === 'Escape' && sel && !typing) select(null);
+  if (e.key === 'Escape' && !typing) { if (zoom) zoomOut(); else if (sel) select(null); }
 });
 
 // ---------------------------------------------------------------- focus timer (Pomodoro)
@@ -1404,6 +1497,8 @@ function renderTimer() {
   panel.classList.toggle('paused', timerPaused());
   $('#tm-phase').textContent = PHASE_NAME[timer.phase] + (timerPaused() ? ' (PAUSED)' : '');
   $('#tm-time').textContent = clockText(timerLeft(now));
+  $('#tm-mini').textContent = (timer.phase === 'short' || timer.phase === 'long' ? 'BREAK ' : '') + clockText(timerLeft(now));
+  $('#tm-quick').textContent = timerRunning() ? 'PAUSE' : timerPaused() ? 'RESUME' : 'START';
   $('#tm-round').textContent = timer.phase === 'idle' ? 'long break every ' + timer.len.every
     : timer.phase === 'work' ? 'session ' + ((timer.done % timer.len.every) + 1) + ' of ' + timer.len.every
     : plural(timer.done, 'session') + ' done';
@@ -1441,6 +1536,7 @@ $('#tm-skip').addEventListener('click', () => {
   startPhase(next, Date.now());
 });
 $('#tm-stop').addEventListener('click', stopTimer);
+$('#tm-quick').addEventListener('click', () => (timerRunning() ? $('#tm-pause') : $('#tm-start')).click());
 $('#tm-task').addEventListener('change', (e) => {
   timer.taskId = validId(e.target.value);
   saveTimer();
@@ -1674,6 +1770,7 @@ const GLYPHS = {
   '!': '010010010000010', '?': '110001010000010', '/': '001001010100100', "'": '010010000000000',
   ',': '000000000010100', '%': '101001010100101', '(': '010100100100010', ')': '010001001001010',
   '+': '000010111010000', '#': '101111101111101', '&': '010101010101011', '"': '101101000000000',
+  '<': '001010100010001', '>': '100010001010100',
 };
 
 // ---------------------------------------------------------------- the scene
@@ -1817,6 +1914,7 @@ function groupPlanet(x, y, c, hi) {
 }
 
 function startAnim(kind, t) {
+  if (zoom) return; // positions are close-up coordinates right now
   const p = pos.get('t:' + t.id);
   if (!p) return;
   anims.push({ kind, r: p.r, a: p.a, start: performance.now(), title: t.title.toUpperCase() });
@@ -2040,6 +2138,17 @@ function makeMission(skipIntro) {
   };
 }
 
+const WAREHOUSE = [
+  '.......g.',
+  '.rrrrrrg.',
+  'rrrrrrrrr',
+  'wwwwwwwww',
+  'wlwwwwwlw',
+  'wwwddwwww',
+  'wwwddwwww',
+];
+const WAREHOUSE_COLORS = { r: '#3a3456', w: '#241f36', l: '#c98a3a', d: '#0d0b17', g: '#4b4f78' };
+
 function drawOutpost() {
   // Kept dim on purpose: a dark silhouette with a faint rim of light, so it
   // sits back in the starfield instead of competing with your tasks.
@@ -2058,6 +2167,11 @@ function drawOutpost() {
       if (x * x + y * y <= cr * cr) px(o.x + cx + x, o.y + cy + y, (x + y > 0) ? '#1b1829' : '#0b0a14');
     }
   }
+  // The agent warehouse, on the planet's left shoulder. Its window glows; the
+  // light on its antenna blinks.
+  const bx = o.x - 19, by = Math.round(surfaceY(bx)) + 2;
+  sprite(WAREHOUSE, WAREHOUSE_COLORS, bx, by, 1);
+  if (Math.floor(performance.now() / 900) % 2) px(bx + 3, by - 8, '#ff4d5e');
 }
 
 function drawFlag(x, y, s, now, grow) {
@@ -2248,10 +2362,185 @@ function drawCrew() {
   }
 }
 
+// ---------------------------------------------------------------- zooming into a planet
+// Tapping a group planet zooms the camera into it (a crisp pixel zoom), then
+// shows a close-up: the planet large in the middle with its moons orbiting it.
+// Tap a moon to open it; tap empty space, ORBIT, or press Escape to zoom out.
+const ZOOM_MS = 520;
+let zoom = null;            // { gid, start, out }
+let pv = null;              // the close-up's planet: { cx, cy, R, gid }
+const zbuf = document.createElement('canvas');
+const zctx = zbuf.getContext('2d');
+
+function zoomTo(gid) {
+  if (zoom && zoom.gid === gid && !zoom.out) return;
+  zoom = { gid, start: performance.now(), out: false };
+}
+function zoomOut() {
+  if (!zoom || zoom.out) return;
+  zoom = { gid: zoom.gid, start: performance.now(), out: true };
+}
+function zoomMode(now) {
+  if (!zoom) return { mode: 'orbit' };
+  const k = clamp01((now - zoom.start) / ZOOM_MS);
+  if (zoom.out) {
+    if (k >= 1) { zoom = null; return { mode: 'orbit' }; }
+    return { mode: 'trans', k: 1 - k };
+  }
+  return k >= 1 ? { mode: 'planet', since: now - zoom.start - ZOOM_MS } : { mode: 'trans', k };
+}
+
+// Blow up the orbit view around the planet, pixel-crisp, fading to black.
+function applyZoom(k) {
+  const p = zoom && pos.get('g:' + zoom.gid);
+  if (!p) return;
+  const e = k * k * (3 - 2 * k), scale = 1 + e * 7;
+  if (zbuf.width !== W || zbuf.height !== H) { zbuf.width = W; zbuf.height = H; }
+  zctx.clearRect(0, 0, W, H);
+  zctx.drawImage(canvas, 0, 0);
+  const sw = W / scale, sh = H / scale;
+  const sx = Math.max(0, Math.min(W - sw, p.x - sw / 2)), sy = Math.max(0, Math.min(H - sh, p.y - sh / 2));
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(zbuf, sx, sy, sw, sh, 0, 0, W, H);
+  ctx.fillStyle = 'rgba(5,4,11,' + (e * e * 0.95).toFixed(3) + ')';
+  ctx.fillRect(0, 0, W, H);
+}
+
+function hash32(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+function drawPlanetView(tm, dt, since) {
+  pos.clear();
+  pv = null;
+  const grp = zoom && groupById(zoom.gid);
+  if (!grp) { zoom = null; return; }
+  ctx.fillStyle = '#05040b';
+  ctx.fillRect(0, 0, W, H);
+  for (const s of stars) {
+    ctx.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin((tm / 1000) * s.sp + s.ph));
+    px(s.x, s.y, s.big ? '#ffffff' : '#8a90c4');
+  }
+  ctx.globalAlpha = 1;
+
+  const at = Date.now();
+  const kids = moonsOf(grp);
+  const gp = kids.length ? kids.reduce((sum, t) => sum + pullOf(t, at), 0) / kids.length : 0;
+  const cx = Math.round(W / 2), cy = Math.round(H / 2) + 3;
+  const R = Math.max(10, Math.round(Math.min(W, H) * 0.11));
+  pv = { cx, cy, R, gid: grp.id };
+
+  // Which way the black hole is: opposite the planet's spot in its orbit.
+  const dirA = (angles.has('g:' + grp.id) ? angles.get('g:' + grp.id) : 0) + Math.PI;
+  const dx = Math.cos(dirA), dy = Math.sin(dirA);
+  const edge = Math.min(W, H) / 2 - 8;
+  const bx = cx + dx * edge, by = cy + dy * edge;
+  for (let y = -4; y <= 4; y++) {
+    for (let x = -4; x <= 4; x++) {
+      const d = Math.hypot(x, y);
+      if (d < 2.6) px(bx + x, by + y, '#000000');
+      else if (d < 3.6) px(bx + x, by + y, '#ff9d3c');
+      else if (d < 4.6 && (x + y) % 2 === 0) px(bx + x, by + y, '#7a2a1a');
+    }
+  }
+  const bl = 'BLACK HOLE';
+  drawText(bl, Math.max(1, Math.min(W - textWidth(bl) - 1, bx - textWidth(bl) / 2)), by + (dy > 0 ? -12 : 7), '#6b2632');
+
+  // Moon orbit rings.
+  const maxR = Math.min(W, H) / 2 - 14;
+  const gap = kids.length > 1 ? Math.max(6, Math.min(12, (maxR - R - 12) / (kids.length - 1))) : 0;
+  kids.forEach((_, i) => dottedRing(cx, cy, R + 12 + i * gap, '#1a1e3c', 4));
+
+  // The planet: lit on the side facing the black hole's glow.
+  const h = hash32(grp.id);
+  for (let y = -R; y <= R; y++) {
+    for (let x = -R; x <= R; x++) {
+      const d2 = x * x + y * y;
+      if (d2 > R * R) continue;
+      const lit = (x * dx + y * dy) / R;
+      px(cx + x, cy + y, grp.color);
+      if (lit < -0.15) { ctx.globalAlpha = Math.min(0.6, (-lit - 0.15) * 0.9); px(cx + x, cy + y, '#000000'); ctx.globalAlpha = 1; }
+      else if (lit > 0.75 && d2 > (R - 2) * (R - 2)) { ctx.globalAlpha = 0.5; px(cx + x, cy + y, '#ffffff'); ctx.globalAlpha = 1; }
+    }
+  }
+  for (let i = 0; i < 4; i++) { // craters, the same every time for this planet
+    const ca = ((h >> (i * 7)) & 127) / 127 * Math.PI * 2, cd = (((h >> (i * 5 + 3)) & 31) / 31) * R * 0.6;
+    const cr = 1 + ((h >> (i * 3 + 1)) & 1) + (R > 14 ? 1 : 0);
+    const ccx = cx + Math.cos(ca) * cd, ccy = cy + Math.sin(ca) * cd;
+    for (let y = -cr; y <= cr; y++) for (let x = -cr; x <= cr; x++) {
+      if (x * x + y * y <= cr * cr) { ctx.globalAlpha = 0.28; px(ccx + x, ccy + y, '#000000'); ctx.globalAlpha = 1; }
+    }
+  }
+  if (isSel('group', grp.id)) brackets(cx, cy, R + 3);
+
+  // The moons, with their names. More urgent moons are dragged toward the black hole.
+  const labels = [];
+  kids.forEach((t, i) => {
+    const mp = pullOf(t, at);
+    const r = R + 12 + i * gap;
+    const a = spin('z:' + t.id, t.id, dt * (0.55 / (1 + i * 0.2)));
+    const tug = clamp01((mp - gp) / 0.3), s = tug * tug * (3 - 2 * tug);
+    let mx = cx + Math.cos(a) * r + dx * s * 16, my = cy + Math.sin(a) * r * 0.85 + dy * s * 16;
+    if (s > 0.35 && Math.floor(tm / 70 + i) % 3 === 0) { mx += dx; my += dy; }
+    mx = Math.round(mx); my = Math.round(my);
+    if (s > 0.12) dottedLine(cx + Math.cos(a) * R, cy + Math.sin(a) * R * 0.85, mx, my, '#5a3040', 2);
+    const c = mp >= 0.9 && Math.floor(tm / 250) % 2 === 0 ? '#ffffff' : pullColor(mp);
+    for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) if (x * x + y * y <= 5) px(mx + x, my + y, c);
+    px(mx - 1, my - 1, '#ffffff');
+    const focus = isSel('task', t.id) || isHov('task', t.id);
+    if (focus) brackets(mx, my, 4);
+    pos.set('t:' + t.id, { x: mx, y: my, type: 'task', id: t.id, r: 0, a: 0 });
+    labels.push({ x: mx, y: my, focus, name: trunc(t.title.toUpperCase(), focus ? 26 : 16), sub: dueText(t, at).toUpperCase(), c: pullColor(mp) });
+  });
+  // Labels: two lines each, placed beside the moon on whichever side has room.
+  const placed = [{ x: cx - R - 2, y: cy - R - 2, w: R * 2 + 4, h: R * 2 + 4 }];
+  const overlaps = (b) => placed.some((q) => b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h);
+  labels.sort((a, b) => b.focus - a.focus);
+  for (const l of labels) {
+    const w = Math.max(textWidth(l.name), textWidth(l.sub)) + 2;
+    const opts = [{ x: l.x + 6, y: l.y - 6, w, h: 13 }, { x: l.x - 6 - w, y: l.y - 6, w, h: 13 }, { x: l.x - w / 2, y: l.y + 5, w, h: 13 }, { x: l.x - w / 2, y: l.y - 19, w, h: 13 }]
+      .filter((b) => b.x >= 0 && b.x + b.w <= W && b.y >= 10 && b.y + b.h <= H - 8);
+    const box = l.focus ? (opts[0] || { x: l.x + 6, y: l.y - 6, w, h: 13 }) : opts.find((b) => !overlaps(b));
+    if (!box) continue;
+    placed.push(box);
+    if (l.focus) { ctx.fillStyle = 'rgba(5,4,11,0.85)'; ctx.fillRect(box.x - 1, box.y - 1, box.w + 1, box.h + 1); }
+    drawText(l.name, box.x, box.y, l.focus ? '#ffffff' : '#c8cce8');
+    drawText(l.sub, box.x, box.y + 7, l.c);
+  }
+
+  // Title, stats, and the way back.
+  const title = grp.name.toUpperCase();
+  drawText(title, cx - textWidth(title) / 2, 3, grp.color);
+  const stat = kids.length ? 'AVG PULL ' + pct(gp) + ' - ' + plural(kids.length, 'MOON').toUpperCase() : 'NO MOONS IN ORBIT YET';
+  drawText(stat, cx - textWidth(stat) / 2, H - 7, '#4b4f78');
+  const back = '< ORBIT';
+  drawText(back, 2, 3, isHov('zoomout', 'back') ? '#ffffff' : '#8a90c4');
+  pos.set('back', { x: 14, y: 5, type: 'zoomout', id: 'back', r: 0, a: 0 });
+
+  if (since < 260) { // fade in from the zoom
+    ctx.fillStyle = 'rgba(5,4,11,' + (0.95 * (1 - since / 260)).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
 let last = performance.now();
 function frame(tm) {
   const dt = Math.min(0.1, Math.max(0, (tm - last) / 1000));
   last = tm;
+  const zm = zoomMode(performance.now());
+  if (zm.mode === 'planet') {
+    drawPlanetView(tm, dt, zm.since);
+  } else {
+    drawOrbit(tm, dt);
+    if (zm.mode === 'trans') applyZoom(zm.k);
+  }
+  requestAnimationFrame(frame);
+}
+
+function drawOrbit(tm, dt) {
+  pv = null;
   ctx.fillStyle = '#05040b';
   ctx.fillRect(0, 0, W, H);
   for (const s of stars) {
@@ -2272,7 +2561,6 @@ function frame(tm) {
   drawScene(g, tm, dt);
   drawAnims(g, tm);
   drawCrew();
-  requestAnimationFrame(frame);
 }
 
 const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -2284,11 +2572,32 @@ function hit(e) {
     const d = (p.x - x) ** 2 + (p.y - y) ** 2;
     if (d < bd) { bd = d; best = p; }
   }
-  return best ? { type: best.type, id: best.id } : null;
+  if (best) return { type: best.type, id: best.id };
+  if (zoom) {
+    if (pv && (x - pv.cx) ** 2 + (y - pv.cy) ** 2 <= (pv.R + 2) ** 2) return { type: 'group', id: pv.gid };
+    return null;
+  }
+  const o = outpost(); // otherwise: anywhere on the astronaut's planet
+  if ((x - o.x) ** 2 + (y - o.y) ** 2 <= o.r * o.r) return { type: 'outpost', id: 'outpost' };
+  return null;
+}
+// The warehouse opens in the desktop app; the web version explains where it is.
+function openWarehouse() {
+  if (window.__TAURI__) location.href = 'warehouse.html';
+  else toast('This planet holds your agent warehouse. It opens in the Agent Station app on your Mac.', true);
 }
 canvas.addEventListener('click', (e) => {
   const h = hit(e);
+  if (zoom) {                                   // in the close-up
+    if (zoom.out) return;
+    if (!h || h.type === 'zoomout') { zoomOut(); return; }
+    if (h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); return; }
+    select(h.type, h.id);
+    return;
+  }
   if (h && h.type === 'astro') { $('#timer-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+  if (h && h.type === 'outpost') { openWarehouse(); return; }
+  if (h && h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); zoomTo(h.id); return; }
   if (h) select(h.type, h.id); else if (sel) select(null);
 });
 canvas.addEventListener('mousemove', (e) => { hover = hit(e); canvas.style.cursor = hover ? 'pointer' : 'default'; });
