@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GPdjjAL/U+UfkVrqWuK1dpH5M9VjEq4R8P2xhg9NLnw='; style-src 'sha256-NfKfUcS1oxWImPxI2Pke7OBCoAWuLVmyq6RjI6kPRHo='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JY1KKJ+Jq8MBrT3HG3c1thxUoI/Qn/NX51tLCtBiVIQ='; style-src 'sha256-7xRxpFWTFAARYrmZGW1gzkouTiLZLaJJMZ+64y5F6cE='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -27,6 +27,7 @@
   --font: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
 body {
   background: var(--bg);
@@ -194,6 +195,27 @@ button.mini { padding: 5px 10px; box-shadow: none; }
 #tm-body, #orbit-body { margin-top: 8px; }
 .tools .sub { margin-top: 12px; }
 .tools .sub:first-of-type { margin-top: 4px; }
+
+/* shopping list */
+.shop-part + .shop-part { margin-top: 14px; padding-top: 10px; border-top: 2px solid #1a1d38; }
+.shop-part .sub { color: var(--cyan); }
+.shop { list-style: none; margin: 8px 0 4px; padding: 0; }
+.shop .item { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 6px; padding: 3px 0; }
+.shop .item + .item { border-top: 1px solid #1a1d38; }
+.shop .item input[type=checkbox] { width: 20px; height: 20px; margin: 0; accent-color: var(--green); }
+.item-body { all: unset; cursor: pointer; display: flex; flex-direction: column; min-width: 0; padding: 4px 2px; }
+.item-body:focus-visible { outline: 2px solid var(--orange); }
+.item-name { font-size: 14px; overflow-wrap: anywhere; }
+.item-meta { font-size: 11px; color: var(--quiet); overflow-wrap: anywhere; }
+.shop .item.done .item-name { text-decoration: line-through; color: var(--quiet); }
+.shop .rm { padding: 2px 6px; font-size: 10px; }
+.item-edit { grid-column: 1 / -1; padding: 6px 0 4px 26px; }
+.item-edit label { margin-bottom: 6px; }
+.item-body { font: 14px var(--font); color: var(--ink); }
+@media (max-width: 820px) {
+  .shop .rm { min-height: 36px; min-width: 36px; }
+  .item-body { min-height: 36px; }
+}
 </style>
 </head>
 <body>
@@ -263,6 +285,40 @@ button.mini { padding: 5px 10px; box-shadow: none; }
         <button type="button" class="danger" id="d-delete">DELETE</button>
       </div>
     </section>
+    <section class="panel detail" id="shop-panel" hidden>
+      <div class="detail-head">
+        <h2>SHOPPING LIST</h2>
+        <button type="button" class="close" id="shop-close" aria-label="Close shopping list">X</button>
+      </div>
+      <div class="shop-part">
+        <p class="sub">NEEDS <span class="count" id="need-count"></span></p>
+        <div class="add-step">
+          <input id="need-add" maxlength="80" placeholder="Add a need (e.g. milk)" aria-label="Add a need" enterkeyhint="done">
+          <button type="button" id="need-add-btn">ADD</button>
+        </div>
+        <ul class="shop" id="need-list"></ul>
+        <p class="empty" id="need-empty">Nothing you need yet.</p>
+        <div class="row" id="need-tools" hidden>
+          <button type="button" id="need-clear">CLEAR CHECKED</button>
+          <button type="button" id="need-uncheck">UNCHECK ALL</button>
+        </div>
+      </div>
+      <div class="shop-part">
+        <p class="sub">WANTS <span class="count" id="want-count"></span></p>
+        <div class="add-step">
+          <input id="want-add" maxlength="80" placeholder="Add a want" aria-label="Add a want" enterkeyhint="done">
+          <button type="button" id="want-add-btn">ADD</button>
+        </div>
+        <ul class="shop" id="want-list"></ul>
+        <p class="empty" id="want-empty">Nothing on the wish list.</p>
+        <div class="row" id="want-tools" hidden>
+          <button type="button" id="want-clear">CLEAR CHECKED</button>
+          <button type="button" id="want-uncheck">UNCHECK ALL</button>
+        </div>
+      </div>
+      <p class="fine">Tap an item's name to add a quantity or note. Checked items stay until you clear them.</p>
+    </section>
+
     <div class="actions">
       <button type="button" class="primary" id="add-task-btn">+ TASK</button>
       <button type="button" id="add-group-btn">+ GROUP</button>
@@ -401,6 +457,7 @@ const NEGLECT_DAYS = 7;     // days without a check-in until neglect is maxed
 const DAY = 864e5;
 const STORE_KEY = 'blackhole.v1';
 const MAX_TITLE = 120, MAX_NOTES = 4000, MAX_TASKS = 5000, MAX_CHECKINS = 500;
+const MAX_SHOP = 500;
 const MAX_GROUPS = 200, MAX_GROUP_NAME = 60, MAX_STEPS = 100, MAX_STEP_TEXT = 200;
 const COLORS = [
   { name: 'Violet', hex: '#b48cff' }, { name: 'Teal', hex: '#3fd0b0' }, { name: 'Pink', hex: '#ff7ac8' },
@@ -528,7 +585,32 @@ function sanitizeState(x) {
     seen.add(t.id);
     tasks.push(t);
   }
-  return { groups, tasks };
+  // Shopping list. Older files have none: null means "leave the current list alone".
+  let shopping = null;
+  if (x && Array.isArray(x.shopping)) {
+    shopping = [];
+    const sseen = new Set();
+    for (const raw of x.shopping.slice(0, MAX_SHOP)) {
+      const it = sanitizeItem(raw);
+      if (it && !sseen.has(it.id)) { sseen.add(it.id); shopping.push(it); }
+    }
+  }
+  return { groups, tasks, shopping };
+}
+
+function sanitizeItem(x) {
+  if (!x || typeof x !== 'object') return null;
+  const name = str(x.name, 80).trim();
+  if (!name) return null;
+  return {
+    id: validId(x.id) || newId(),
+    name,
+    qty: str(x.qty, 20).trim(),
+    note: str(x.note, 120).trim(),
+    list: x.list === 'want' ? 'want' : 'need',
+    checked: x.checked === true,
+    createdAt: dateOf(x.createdAt) || isoOf(Date.now()),
+  };
 }
 
 // ---------------------------------------------------------------- storage
@@ -536,20 +618,20 @@ let storageOk = true;
 
 function load() {
   let raw = null;
-  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { storageOk = false; return { groups: [], tasks: [] }; }
-  if (raw == null) return { groups: [], tasks: [] };
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { storageOk = false; return { groups: [], tasks: [], shopping: [] }; }
+  if (raw == null) return { groups: [], tasks: [], shopping: [] };
   try {
     const s = sanitizeState(JSON.parse(raw));
-    if (s) return s;
+    if (s) { if (!s.shopping) s.shopping = []; return s; }
   } catch (e) { /* fall through */ }
   // Unreadable data: keep a copy instead of overwriting it.
   try { localStorage.setItem(STORE_KEY + '.unreadable-' + Date.now(), raw); } catch (e) { /* ignore */ }
-  return { groups: [], tasks: [] };
+  return { groups: [], tasks: [], shopping: [] };
 }
 
 function save() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ version: 2, groups: state.groups, tasks: state.tasks }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ version: 3, groups: state.groups, tasks: state.tasks, shopping: state.shopping }));
     storageOk = true;
   } catch (e) { storageOk = false; }
   $('#storage-warning').hidden = storageOk;
@@ -1158,6 +1240,172 @@ function removeGroup(g, withTasks) {
   toast(withTasks ? 'Group and its tasks deleted.' : 'Group deleted. Its tasks now orbit on their own.', true);
 }
 
+
+// ---------------------------------------------------------------- shopping list
+// Two lists, Needs and Wants. Checking an item only crosses it off; it stays
+// until you delete it, clear checked items, or uncheck everything.
+const LISTS = { need: 'Needs', want: 'Wants' };
+let editingItem = null; // id of the item whose details are open
+
+function itemsOf(list) {
+  return state.shopping
+    .filter((it) => it.list === list)
+    .sort((a, b) => (a.checked - b.checked) || (ms(a.createdAt) - ms(b.createdAt)));
+}
+
+function renderShop() {
+  if ($('#shop-panel').hidden) return;
+  for (const list of Object.keys(LISTS)) {
+    const ul = $('#' + list + '-list');
+    const items = itemsOf(list);
+    const keepFocus = document.activeElement && ul.contains(document.activeElement) ? document.activeElement.dataset.focus : null;
+    ul.textContent = '';
+    for (const it of items) ul.append(itemRow(it));
+    const left = items.filter((it) => !it.checked).length;
+    $('#' + list + '-count').textContent = items.length ? left + ' left' + (items.length > left ? ', ' + (items.length - left) + ' checked' : '') : '';
+    $('#' + list + '-empty').hidden = items.length > 0;
+    $('#' + list + '-tools').hidden = !items.some((it) => it.checked);
+    if (keepFocus) { const f = ul.querySelector('[data-focus="' + keepFocus + '"]'); if (f) f.focus(); }
+  }
+}
+
+function itemRow(it) {
+  const li = document.createElement('li');
+  li.className = 'item' + (it.checked ? ' done' : '');
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.checked = it.checked;
+  box.setAttribute('aria-label', (it.checked ? 'Uncheck ' : 'Check off ') + it.name);
+  box.dataset.focus = 'c' + it.id;
+  box.addEventListener('change', () => { it.checked = box.checked; save(); renderShop(); });
+
+  const body = document.createElement('button');
+  body.type = 'button';
+  body.className = 'item-body';
+  body.dataset.focus = 'b' + it.id;
+  body.setAttribute('aria-expanded', String(editingItem === it.id));
+  const name = document.createElement('span');
+  name.className = 'item-name';
+  name.textContent = it.name;
+  body.append(name);
+  const extra = [it.qty && 'x' + it.qty.replace(/^x/i, ''), it.note].filter(Boolean).join(' · ');
+  if (extra) {
+    const meta = document.createElement('span');
+    meta.className = 'item-meta';
+    meta.textContent = extra;
+    body.append(meta);
+  }
+  body.addEventListener('click', () => { editingItem = editingItem === it.id ? null : it.id; renderShop(); });
+
+  const other = it.list === 'need' ? 'want' : 'need';
+  const move = document.createElement('button');
+  move.type = 'button';
+  move.className = 'rm';
+  move.textContent = it.list === 'need' ? '> WANT' : '> NEED';
+  move.setAttribute('aria-label', 'Move ' + it.name + ' to ' + LISTS[other]);
+  move.addEventListener('click', () => {
+    it.list = other;
+    save();
+    renderShop();
+    toast(it.name + ' moved to ' + LISTS[other] + '.', true);
+  });
+
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'rm danger';
+  del.textContent = 'X';
+  del.setAttribute('aria-label', 'Delete ' + it.name);
+  del.addEventListener('click', () => armThen(del, 'SURE?', () => {
+    state.shopping = state.shopping.filter((x) => x !== it);
+    save();
+    renderShop();
+  }));
+
+  li.append(box, body, move, del);
+  if (editingItem === it.id) li.append(itemEditor(it));
+  return li;
+}
+
+function itemEditor(it) {
+  const wrap = document.createElement('div');
+  wrap.className = 'item-edit';
+  const field = (label, value, max, ph) => {
+    const l = document.createElement('label');
+    l.textContent = label;
+    const i = document.createElement('input');
+    i.maxLength = max;
+    i.value = value;
+    if (ph) i.placeholder = ph;
+    l.append(i);
+    wrap.append(l);
+    return i;
+  };
+  const nameIn = field('NAME', it.name, 80);
+  const qtyIn = field('QUANTITY (optional)', it.qty, 20, 'e.g. 2');
+  const noteIn = field('NOTE (optional)', it.note, 120, 'e.g. the oat kind');
+  const row = document.createElement('div');
+  row.className = 'row';
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'primary';
+  saveBtn.textContent = 'SAVE';
+  const done = () => {
+    const n = nameIn.value.trim();
+    if (!n) { nameIn.focus(); return; }
+    it.name = n.slice(0, 80);
+    it.qty = qtyIn.value.trim().slice(0, 20);
+    it.note = noteIn.value.trim().slice(0, 120);
+    editingItem = null;
+    save();
+    renderShop();
+  };
+  saveBtn.addEventListener('click', done);
+  for (const i of [nameIn, qtyIn, noteIn]) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); done(); } });
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.textContent = 'CANCEL';
+  cancel.addEventListener('click', () => { editingItem = null; renderShop(); });
+  row.append(saveBtn, cancel);
+  wrap.append(row);
+  return wrap;
+}
+
+function addItem(list) {
+  const input = $('#' + list + '-add');
+  const name = input.value.trim().slice(0, 80);
+  if (!name) return;
+  if (state.shopping.length >= MAX_SHOP) { toast('The shopping list is full. Clear some checked items first.'); return; }
+  state.shopping.push({ id: newId(), name, qty: '', note: '', list, checked: false, createdAt: isoOf(Date.now()) });
+  input.value = '';
+  save();
+  renderShop();
+  input.focus(); // ready for the next one
+}
+
+for (const list of Object.keys(LISTS)) {
+  $('#' + list + '-add').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(list); } });
+  $('#' + list + '-add-btn').addEventListener('click', () => addItem(list));
+  $('#' + list + '-clear').addEventListener('click', () => armThen($('#' + list + '-clear'), 'TAP AGAIN TO CLEAR', () => {
+    const n = state.shopping.filter((it) => it.list === list && it.checked).length;
+    state.shopping = state.shopping.filter((it) => !(it.list === list && it.checked));
+    save();
+    renderShop();
+    toast('Cleared ' + plural(n, 'checked item') + ' from ' + LISTS[list] + '.', true);
+  }));
+  $('#' + list + '-uncheck').addEventListener('click', () => {
+    for (const it of state.shopping) if (it.list === list) it.checked = false;
+    save();
+    renderShop();
+  });
+}
+
+function openShop() {
+  $('#shop-panel').hidden = false;
+  renderShop();
+  $('#shop-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+$('#shop-close').addEventListener('click', () => { $('#shop-panel').hidden = true; editingItem = null; });
+
 // ---------------------------------------------------------------- folding sections
 const FOLD_KEY = 'blackhole.folds.v1';
 let folds = {};
@@ -1235,8 +1483,9 @@ function createGroup() {
 // ---------------------------------------------------------------- export / import / alerts
 $('#export').addEventListener('click', () => {
   const data = {
-    app: 'agent-station-black-hole', version: 2, exportedAt: isoOf(Date.now()),
+    app: 'agent-station-black-hole', version: 3, exportedAt: isoOf(Date.now()),
     settings: { deadlineWeight: WEIGHT, neglectDays: NEGLECT_DAYS }, groups: state.groups, tasks: state.tasks,
+    shopping: state.shopping,
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   const a = document.createElement('a');
@@ -1263,7 +1512,8 @@ $('#import-file').addEventListener('change', (ev) => {
       pendingImport = s;
       $('#import-confirm-text').textContent = 'Replace your ' + plural(state.tasks.length, 'task') + ' and ' +
         plural(state.groups.length, 'group') + ' with the ' + plural(s.tasks.length, 'task') + ' and ' +
-        plural(s.groups.length, 'group') + ' in this file?';
+        plural(s.groups.length, 'group') + ' in this file?' +
+        (s.shopping ? ' Your shopping list will be replaced too.' : ' Your shopping list stays as it is.');
       $('#import-confirm').hidden = false;
       $('#import-confirm').scrollIntoView({ block: 'nearest' });
       return;
@@ -1282,12 +1532,14 @@ $('#import-yes').addEventListener('click', () => {
 $('#import-no').addEventListener('click', () => { $('#import-confirm').hidden = true; pendingImport = null; });
 
 function applyImport(s) {
+    if (!s.shopping) s.shopping = state.shopping; // older exports have no shopping list
     state = s;
     angles.clear();
     save();
     refreshGroupSelects();
     buildSwatches($('#g-colors'), 'g-color', nextColor());
     select(null);
+    renderShop();
     sweep(true);
     toast('Imported ' + plural(s.tasks.length, 'task') + ' and ' + plural(s.groups.length, 'group') + '.', true);
 }
@@ -1315,6 +1567,7 @@ window.addEventListener('storage', (e) => {
   fillDetail();
   fillGroupDetail();
   renderLists();
+  renderShop();
 });
 document.addEventListener('keydown', (e) => {
   const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
@@ -2367,7 +2620,7 @@ function drawCrew() {
 // shows a close-up: the planet large in the middle with its moons orbiting it.
 // Tap a moon to open it; tap empty space, ORBIT, or press Escape to zoom out.
 const ZOOM_MS = 520;
-let zoom = null;            // { gid, start, out }
+let zoom = null;            // { gid, start, out }; gid 'outpost' = the astronaut's planet
 let pv = null;              // the close-up's planet: { cx, cy, R, gid }
 const zbuf = document.createElement('canvas');
 const zctx = zbuf.getContext('2d');
@@ -2392,7 +2645,7 @@ function zoomMode(now) {
 
 // Blow up the orbit view around the planet, pixel-crisp, fading to black.
 function applyZoom(k) {
-  const p = zoom && pos.get('g:' + zoom.gid);
+  const p = zoom && (zoom.gid === 'outpost' ? outpost() : pos.get('g:' + zoom.gid));
   if (!p) return;
   const e = k * k * (3 - 2 * k), scale = 1 + e * 7;
   if (zbuf.width !== W || zbuf.height !== H) { zbuf.width = W; zbuf.height = H; }
@@ -2406,6 +2659,119 @@ function applyZoom(k) {
   ctx.fillRect(0, 0, W, H);
 }
 
+// The astronaut's planet up close: its surface curves across the bottom, with
+// the AI warehouse on one side and the supply depot (your shopping list) on
+// the other.
+const DEPOT = [
+  '....sss....',
+  'aAaAaAaAaAa',
+  '.wwwwwwwww.',
+  '.wlwwdwwlw.',
+  '.wlwwdwwlw.',
+  '.wwwwdwwww.',
+];
+const DEPOT_COLORS = { s: '#6fe08a', a: '#3fae6a', A: '#e6e6ff', w: '#2e2a48', l: '#ffe066', d: '#0d0b17' };
+const WAREHOUSE_BRIGHT = { r: '#4b4570', w: '#2e2a48', l: '#ffb347', d: '#0d0b17', g: '#6b708f' };
+let bboxes = [];
+let surfCache = null; // the planet surface, redrawn only when the canvas size changes
+
+function surfaceGeom() {
+  const R = Math.round(Math.max(W, H) * 0.9);
+  return { R, cx: Math.round(W / 2), cy: Math.round(H * 0.64 + R) };
+}
+function groundAt(x, sg) { return sg.cy - Math.sqrt(Math.max(0, sg.R * sg.R - (x - sg.cx) ** 2)); }
+
+function surfaceImage(sg) {
+  if (surfCache && surfCache.width === W && surfCache.height === H) return surfCache;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const top = Math.floor(sg.cy - sg.R);
+  for (let y = top; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x - sg.cx, y - sg.cy);
+      if (d > sg.R) continue;
+      const depth = sg.R - d;
+      g.fillStyle = depth < 1.2 ? '#3a3456' : depth < 4 ? '#1d1a2e' : (x + y) % 7 === 0 ? '#16131f' : '#14111f';
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  const crater = (fx, fy, rx) => { // flattened craters, seen at a low angle
+    const x0 = Math.round(W * fx), y0 = Math.round(H * fy), ry = Math.max(1, Math.round(rx / 3));
+    for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) {
+      if ((x * x) / (rx * rx) + (y * y) / (ry * ry) <= 1) { g.fillStyle = y < 0 ? '#0b0a14' : '#1f1c33'; g.fillRect(x0 + x, y0 + y, 1, 1); }
+    }
+  };
+  crater(0.12, 0.82, 6); crater(0.52, 0.9, 9); crater(0.86, 0.8, 5); crater(0.38, 0.97, 4);
+  surfCache = c;
+  return c;
+}
+
+function drawOutpostView(tm, dt, since) {
+  pos.clear();
+  pv = null;
+  bboxes = [];
+  ctx.fillStyle = '#05040b';
+  ctx.fillRect(0, 0, W, H);
+  for (const s of stars) {
+    ctx.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin((tm / 1000) * s.sp + s.ph));
+    px(s.x, s.y, s.big ? '#ffffff' : '#8a90c4');
+  }
+  ctx.globalAlpha = 1;
+
+  // The black hole, far off in the sky.
+  const hx = Math.round(W * 0.82), hy = Math.round(H * 0.22);
+  for (let i = -8; i <= 8; i++) if (Math.abs(i) > 4) px(hx + i, hy + (Math.abs(i) > 6 ? 1 : 0), i % 2 ? '#ff7a2a' : '#ffb347');
+  for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) {
+    const d = Math.hypot(x, y);
+    if (d < 3.5) px(hx + x, hy + y, '#000000'); else if (d < 4.5) px(hx + x, hy + y, '#ff9d3c');
+  }
+
+  const sg = surfaceGeom();
+  ctx.drawImage(surfaceImage(sg), 0, 0);
+
+  const S3 = Math.max(2, Math.min(4, Math.floor(Math.min(W, H) / 55)));
+  const building = (id, rows, colors, fx, name, status, statusColor) => {
+    const x = Math.round(W * fx), y = Math.round(groundAt(x, sg)) + S3;
+    const w = rows[0].length * S3, h = rows.length * S3;
+    sprite(rows, colors, x, y, S3);
+    const box = { id, x0: x - w / 2 - 3, y0: y - h - 3, x1: x + w / 2 + 3, y1: y + 14 };
+    bboxes.push(box);
+    if (isHov('building', id)) brackets(x, y - h / 2, Math.max(w, h) / 2 + 3);
+    drawText(name, x - textWidth(name) / 2, y + 3, isHov('building', id) ? '#ffffff' : '#c8cce8');
+    drawText(status, x - textWidth(status) / 2, y + 10, statusColor);
+    return { x, y, w, h };
+  };
+
+  const desktop = !!window.__TAURI__;
+  const wh = building('warehouse', WAREHOUSE, WAREHOUSE_BRIGHT, 0.28, 'AI WAREHOUSE',
+    desktop ? 'TAP TO ENTER' : 'IN THE MAC APP', desktop ? '#6fe08a' : '#4b4f78');
+  if (Math.floor(tm / 900) % 2) { ctx.fillStyle = '#ff4d5e'; ctx.fillRect(wh.x - wh.w / 2 + 7 * S3, wh.y - wh.h, S3, S3); } // antenna light
+
+  const left = (l) => state.shopping.filter((it) => it.list === l && !it.checked).length;
+  const nl = left('need'), wl = left('want');
+  building('depot', DEPOT, DEPOT_COLORS, 0.72, 'SUPPLY DEPOT',
+    state.shopping.length ? (plural(nl, 'need') + ' - ' + plural(wl, 'want')).toUpperCase() : 'SHOPPING LIST', nl ? '#ffe066' : '#4b4f78');
+
+  // The astronaut hangs around between them when he isn't out on a mission.
+  if (timer.phase === 'idle') {
+    const ax = Math.round(W * 0.5 + Math.sin(tm / 2600) * W * 0.05);
+    const moving = Math.abs(Math.cos(tm / 2600)) > 0.25;
+    sprite(moving && Math.floor(tm / 170) % 2 ? ASTRO_STEP : ASTRO, ASTRO_COLORS, ax, Math.round(groundAt(ax, sg)) + 1, Math.max(1, S3 - 1), Math.cos(tm / 2600) < 0);
+  }
+
+  const title = 'HOME BASE';
+  drawText(title, W / 2 - textWidth(title) / 2, 3, '#c8cce8');
+  const back = '< ORBIT';
+  drawText(back, 2, 3, isHov('zoomout', 'back') ? '#ffffff' : '#8a90c4');
+  pos.set('back', { x: 14, y: 5, type: 'zoomout', id: 'back', r: 0, a: 0 });
+
+  if (since < 260) {
+    ctx.fillStyle = 'rgba(5,4,11,' + (0.95 * (1 - since / 260)).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
 function hash32(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
@@ -2415,6 +2781,7 @@ function hash32(str) {
 function drawPlanetView(tm, dt, since) {
   pos.clear();
   pv = null;
+  bboxes = [];
   const grp = zoom && groupById(zoom.gid);
   if (!grp) { zoom = null; return; }
   ctx.fillStyle = '#05040b';
@@ -2531,7 +2898,8 @@ function frame(tm) {
   last = tm;
   const zm = zoomMode(performance.now());
   if (zm.mode === 'planet') {
-    drawPlanetView(tm, dt, zm.since);
+    if (zoom.gid === 'outpost') drawOutpostView(tm, dt, zm.since);
+    else drawPlanetView(tm, dt, zm.since);
   } else {
     drawOrbit(tm, dt);
     if (zm.mode === 'trans') applyZoom(zm.k);
@@ -2541,6 +2909,7 @@ function frame(tm) {
 
 function drawOrbit(tm, dt) {
   pv = null;
+  bboxes = [];
   ctx.fillStyle = '#05040b';
   ctx.fillRect(0, 0, W, H);
   for (const s of stars) {
@@ -2575,6 +2944,7 @@ function hit(e) {
   if (best) return { type: best.type, id: best.id };
   if (zoom) {
     if (pv && (x - pv.cx) ** 2 + (y - pv.cy) ** 2 <= (pv.R + 2) ** 2) return { type: 'group', id: pv.gid };
+    for (const b of bboxes) if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return { type: 'building', id: b.id };
     return null;
   }
   const o = outpost(); // otherwise: anywhere on the astronaut's planet
@@ -2592,11 +2962,12 @@ canvas.addEventListener('click', (e) => {
     if (zoom.out) return;
     if (!h || h.type === 'zoomout') { zoomOut(); return; }
     if (h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); return; }
+    if (h.type === 'building') { if (h.id === 'depot') openShop(); else openWarehouse(); return; }
     select(h.type, h.id);
     return;
   }
   if (h && h.type === 'astro') { $('#timer-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
-  if (h && h.type === 'outpost') { openWarehouse(); return; }
+  if (h && h.type === 'outpost') { zoomTo('outpost'); return; }
   if (h && h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); zoomTo(h.id); return; }
   if (h) select(h.type, h.id); else if (sel) select(null);
 });
