@@ -1,0 +1,21 @@
+{
+  "name": "Black Hole",
+  "short_name": "Black Hole",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#05040b",
+  "theme_color": "#05040b",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

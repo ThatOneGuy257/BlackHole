@@ -3,9 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Yho/5Ckp0z/AxcVQqD1/Do8J+JqDBKXhs05D6BPVdIg='; style-src 'sha256-mllwCLeRAxsF4lV0955oJ9RaSeUGlqGZ/zD6eMFHT+Y='; img-src 'none'; connect-src https://ntfy.sh; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1UFGWcJqFG5AX9LVHjsVCsk3HSN/2mm4poxGBZEqUFc='; style-src 'sha256-mllwCLeRAxsF4lV0955oJ9RaSeUGlqGZ/zD6eMFHT+Y='; img-src 'self'; connect-src https://ntfy.sh; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>Black Hole Tasks</title>
+<title>Black Hole</title>
+<meta name="theme-color" content="#05040b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Black Hole">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>:root {
   --bg: #07060f;
   --panel: #0f0e1e;
@@ -268,13 +276,14 @@ label.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--or
           <input id="nt-topic" readonly aria-label="Your ntfy topic">
           <button type="button" id="nt-copy">COPY</button>
         </div>
-        <label class="check"><input type="checkbox" id="nt-on"> Send timer alerts to my phone</label>
+        <label class="check"><input type="checkbox" id="nt-on"> Focus timer alerts</label>
+        <label class="check"><input type="checkbox" id="nt-tasks"> Deadline alerts (24 hours before, 1 hour before, and when a task crosses)</label>
         <div class="row">
           <button type="button" id="nt-test">SEND TEST</button>
           <button type="button" id="nt-new">NEW TOPIC</button>
         </div>
         <p class="msg" id="nt-status" hidden></p>
-        <p class="fine">Only "session done" and "break over" alerts are sent, never task names. Your topic works like a password: anyone who knows it can read these alerts.</p>
+        <p class="fine">Timer alerts say only "session done" or "break over". Deadline alerts include the task's name and group. Your topic works like a password: anyone who knows it can read these alerts, so keep it to yourself. Deadline alerts are scheduled up to 3 days ahead, so open the app every couple of days to keep them coming.</p>
       </details>
     </section>
 
@@ -502,6 +511,7 @@ function save() {
     storageOk = true;
   } catch (e) { storageOk = false; }
   $('#storage-warning').hidden = storageOk;
+  if (typeof queueTaskAlertSync === 'function') queueTaskAlertSync();
 }
 
 let state = load();
@@ -594,7 +604,43 @@ function alertLost(list, away) {
   }
 }
 
+// Warn once per deadline when a task gets within 24 hours, and again within 1 hour.
+const WARN_KEY = 'blackhole.warned.v1';
+let warned = (() => {
+  try { const x = JSON.parse(localStorage.getItem(WARN_KEY) || '{}'); return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
+  catch (e) { return {}; }
+})();
+function checkWarnings() {
+  const at = Date.now(), hits = [];
+  for (const t of state.tasks) {
+    if (t.status !== 'orbit' || !t.deadline) continue;
+    const left = ms(t.deadline) - at;
+    if (left <= 0) continue;
+    const prev = warned[t.id];
+    const w = prev && prev.d === t.deadline ? prev : { d: t.deadline, h24: false, h1: false };
+    let hit = false;
+    if (left <= HOUR_MS && !w.h1) { w.h1 = w.h24 = true; hit = true; }
+    else if (left <= 24 * HOUR_MS && !w.h24) { w.h24 = true; hit = true; }
+    warned[t.id] = w;
+    if (hit) hits.push({ t, left });
+  }
+  if (!hits.length) return;
+  for (const id of Object.keys(warned)) if (!taskById(id)) delete warned[id];
+  try { localStorage.setItem(WARN_KEY, JSON.stringify(warned)); } catch (e) { /* ignore */ }
+  hits.sort((a, b) => a.left - b.left);
+  const text = hits.length === 1
+    ? nameWithGroup(hits[0].t) + ' crosses the event horizon in ' + span(hits[0].left) + '.'
+    : hits.length + ' tasks are nearing the event horizon. The closest, ' + nameWithGroup(hits[0].t) + ', crosses in ' + span(hits[0].left) + '.';
+  toast(text);
+  beep();
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('Nearing the event horizon', { body: text }); } catch (e) { /* ignore */ }
+  }
+}
+const HOUR_MS = 3600e3;
+
 function sweep(away) {
+  checkWarnings();
   const at = Date.now(), lost = [];
   for (const t of state.tasks) {
     if (t.status === 'orbit' && pullOf(t, at) >= 1) {
@@ -1427,12 +1473,20 @@ const TOPIC_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const randomTopic = () => 'blackhole-' + newId().slice(0, 20);
 
 function loadNtfy() {
-  const base = { enabled: false, topic: randomTopic(), pending: [] };
+  const base = { enabled: false, deadlines: false, topic: randomTopic(), pending: [], tasks: {} };
   try {
     const x = JSON.parse(localStorage.getItem(NTFY_KEY) || 'null');
     if (!x || typeof x !== 'object') return base;
     if (typeof x.topic === 'string' && TOPIC_RE.test(x.topic)) base.topic = x.topic;
     base.enabled = x.enabled === true;
+    base.deadlines = x.deadlines === true;
+    if (x.tasks && typeof x.tasks === 'object') {
+      for (const [sid, r] of Object.entries(x.tasks).slice(0, 3000)) {
+        if (/^[A-Za-z0-9]{2,40}$/.test(sid) && r && TOPIC_RE.test(r.topic) && typeof r.sig === 'string' && r.sig.length < 600 && Number.isFinite(r.at)) {
+          base.tasks[sid] = { topic: r.topic, sig: r.sig, at: r.at };
+        }
+      }
+    }
     if (Array.isArray(x.pending)) {
       base.pending = x.pending.filter((p) => p && TOPIC_RE.test(p.topic) && /^[a-f0-9]{8,40}$/.test(p.sid)).slice(0, 10);
     }
@@ -1501,10 +1555,77 @@ async function doSyncPhoneAlerts() {
   }
 }
 
+// Deadline alerts on the phone: 24 hours before, 1 hour before, and when a
+// task crosses. ntfy only holds messages up to 3 days ahead, so alerts are
+// (re)scheduled whenever tasks change, when the page opens, and every 30
+// minutes while it's open. Each alert has a fixed ID per task and kind, so a
+// changed deadline replaces its alerts instead of piling up new ones.
+const NTFY_AHEAD = 3 * 24 * 3600e3 - 5 * 60e3;
+const HOUR = 3600e3;
+
+function taskAlertPlan() {
+  const out = [];
+  if (!ntfy.deadlines) return out;
+  for (const t of state.tasks) {
+    if (t.status !== 'orbit' || !t.deadline) continue;
+    const d = ms(t.deadline), g = t.groupId && groupById(t.groupId);
+    const name = '"' + t.title + '"' + (g ? ' (' + g.name + ')' : '');
+    const key = 't' + t.id.replace(/[^A-Za-z0-9]/g, '').slice(0, 30);
+    out.push(
+      { sid: key + 'a', at: d - 24 * HOUR, title: 'Nearing the event horizon', tags: 'warning', message: name + ' crosses the event horizon in 24 hours.' },
+      { sid: key + 'b', at: d - HOUR, title: '1 hour to the event horizon', tags: 'rotating_light', message: name + ' crosses the event horizon in 1 hour.' },
+      { sid: key + 'c', at: d, title: 'Crossed the event horizon', tags: 'hole', message: name + ' was swallowed. Open Black Hole to rescue it.' },
+    );
+  }
+  return out;
+}
+const alertSig = (a) => Math.ceil(a.at / 1000) + '|' + a.message;
+
+let taskSyncTimer = 0;
+function queueTaskAlertSync() {
+  clearTimeout(taskSyncTimer);
+  taskSyncTimer = setTimeout(() => { ntfyQueue = ntfyQueue.then(syncTaskAlerts, syncTaskAlerts); }, 1500);
+}
+async function syncTaskAlerts() {
+  const now = Date.now();
+  const plan = new Map(taskAlertPlan().map((a) => [a.sid, a]));
+  const reg = ntfy.tasks;
+  // Cancel alerts that no longer match a task (completed, deleted, renamed, new deadline, new topic).
+  for (const sid of Object.keys(reg)) {
+    const a = plan.get(sid), r = reg[sid];
+    if (a && r.topic === ntfy.topic && r.sig === alertSig(a)) continue;
+    if (r.at > now) await ntfyFetch('DELETE', '/' + r.topic + '/' + sid).catch(() => {});
+    delete reg[sid];
+  }
+  for (const sid of Object.keys(reg)) if (reg[sid].at < now - 60e3) delete reg[sid]; // already delivered
+  saveNtfy();
+  // Schedule the ones now inside ntfy's 3-day window.
+  for (const [sid, a] of plan) {
+    if (reg[sid] || a.at < now + 15e3 || a.at > now + NTFY_AHEAD) continue;
+    try {
+      await ntfyFetch('POST', '/' + ntfy.topic, a.message, {
+        'X-Title': a.title, 'X-Tags': a.tags, 'X-Delay': String(Math.ceil(a.at / 1000)), 'X-Sequence-ID': sid,
+      });
+      reg[sid] = { topic: ntfy.topic, sig: alertSig(a), at: a.at };
+      saveNtfy();
+    } catch (e) {
+      setNtfyStatus("Couldn't reach ntfy.sh to schedule deadline alerts. They'll be retried later.", 'err');
+      return;
+    }
+  }
+}
+
 function renderNtfy() {
   $('#nt-topic').value = ntfy.topic;
   $('#nt-on').checked = ntfy.enabled;
+  $('#nt-tasks').checked = ntfy.deadlines;
 }
+$('#nt-tasks').addEventListener('change', (e) => {
+  ntfy.deadlines = e.target.checked;
+  saveNtfy();
+  queueTaskAlertSync();
+  setNtfyStatus(ntfy.deadlines ? 'On. Tasks with deadlines will alert your phone 24 hours before, 1 hour before, and when they cross.' : 'Off. Scheduled deadline alerts were cancelled.', 'ok');
+});
 $('#nt-on').addEventListener('change', (e) => {
   ntfy.enabled = e.target.checked;
   saveNtfy();
@@ -1528,11 +1649,14 @@ $('#nt-new').addEventListener('click', () => {
     saveNtfy();
     renderNtfy();
     syncPhoneAlerts(); // cancels alerts on the old topic, schedules on the new one
+    queueTaskAlertSync();
     setNtfyStatus('New topic made. Subscribe to it in the ntfy app (and remove the old one).', 'ok');
   });
 });
 saveNtfy(); // keep the generated topic stable across visits
 renderNtfy();
+queueTaskAlertSync();                       // catch up on alerts that entered the 3-day window
+setInterval(queueTaskAlertSync, 30 * 60e3);
 
 // ---------------------------------------------------------------- pixel font (3x5)
 const GLYPHS = {
