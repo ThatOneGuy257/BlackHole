@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2Xhgq6HI+A1bYnO3/AsGG5GqE5C0kjIlUz1L8UF3Zyw='; style-src 'sha256-xz8+lewqoh2COcJgW6yhuTEzyiEy3pPzP6NPZsXwxCs='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0a057zONxAPp+CWsnM+nJ0pMTQmLBvjMoXSDzvqDey4='; style-src 'sha256-lDv/W/QFoJKDov5CEmllEp1VicdM+BvIwSPrhBnOc34='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -235,6 +235,24 @@ button.mini { padding: 5px 10px; box-shadow: none; }
 .inbox .ib-meta { display: block; color: var(--quiet); font-size: 11px; }
 .inbox .ib-hide { padding: 3px 8px; font-size: 10px; }
 .inbox .ib-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--edge); max-height: 60vh; overflow-y: auto; }
+
+/* Agents (the station, seen from this device) */
+.give-row select { flex: 1 1 140px; margin: 0; }
+.station .st-card { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--edge); }
+.station .st-chat { list-style: none; margin: 0 0 8px; padding: 0; max-height: 50vh; overflow-y: auto; }
+.station .st-chat li { padding: 6px 8px; margin-bottom: 6px; border: 2px solid var(--edge); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.station .st-chat li.me { background: #1a1c38; margin-left: 24px; }
+.station .st-chat li.them { background: #101a1a; border-color: #24524a; margin-right: 24px; }
+.station .st-who { display: block; font-size: 10px; letter-spacing: 1px; color: var(--quiet); margin-bottom: 2px; }
+.station .st-state { font-size: 10px; letter-spacing: 1px; margin-left: 6px; }
+.station .st-state.busy { color: var(--green); }
+.station .st-state.err { color: var(--red); }
+.st-days { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.st-days label { position: relative; display: inline-block; margin: 0; padding: 6px 9px; border: 2px solid var(--edge); font-size: 12px; color: var(--quiet); cursor: pointer; }
+.st-days label:has(input:checked) { border-color: var(--orange); background: #3a2410; color: #ffd9b0; }
+#st-queue li { font-size: 12px; }
+#st-queue li.ok { color: var(--green); }
+#st-queue li.err { color: #ffb3bc; }
 </style>
 </head>
 <body>
@@ -293,6 +311,14 @@ button.mini { padding: 5px 10px; box-shadow: none; }
         </div>
       </div>
       <div id="d-stats" class="stats"></div>
+      <div id="d-give-box" hidden>
+        <p class="sub">GIVE TO AN AGENT</p>
+        <div class="row give-row">
+          <select id="d-agent" aria-label="Agent to give this task to"></select>
+          <button type="button" id="d-give">GIVE</button>
+        </div>
+        <p class="fine">The agent sees only this task: its title, notes and deadline. Its answer is added to the notes.</p>
+      </div>
       <p class="msg" id="d-msg" hidden></p>
       <div class="row">
         <button type="button" class="primary" id="d-checkin">CHECK IN</button>
@@ -422,6 +448,42 @@ button.mini { padding: 5px 10px; box-shadow: none; }
       </div>
     </section>
 
+    <section class="panel" id="station-panel" hidden>
+      <div class="fold-head">
+        <button type="button" class="fold-toggle" id="station-toggle" aria-expanded="true" aria-controls="station-body"><span class="chev" aria-hidden="true">v</span>AGENTS <span class="count" id="station-count">0</span></button>
+      </div>
+      <div id="station-body">
+        <p class="fine" id="st-updated"></p>
+        <div class="row"><button type="button" class="danger" id="st-pause">PAUSE ALL</button></div>
+        <ul class="inbox station" id="st-agents"></ul>
+        <details class="lengths" id="st-hire-box">
+          <summary>HIRE AN AGENT</summary>
+          <label>NAME<input id="st-h-name" maxlength="40" placeholder="e.g. Nova"></label>
+          <label>ROLE<input id="st-h-role" maxlength="80" placeholder="e.g. Researcher"></label>
+          <label>MODEL<select id="st-h-model"></select></label>
+          <label>INSTRUCTIONS<textarea id="st-h-instr" rows="3" maxlength="8000" placeholder="What this agent does"></textarea></label>
+          <div class="row"><button type="button" class="primary" id="st-hire">HIRE</button></div>
+        </details>
+        <details class="lengths" id="st-jobs-box">
+          <summary>SCHEDULED JOBS <span class="count" id="st-jobs-count">0</span></summary>
+          <ul class="inbox" id="st-jobs"></ul>
+          <details class="lengths" id="st-job-form">
+            <summary>ADD A JOB</summary>
+            <label>NAME<input id="st-j-name" maxlength="60" placeholder="e.g. Morning quiz"></label>
+            <label>AGENT<select id="st-j-agent"></select></label>
+            <label>MESSAGE<textarea id="st-j-text" rows="2" maxlength="4000"></textarea></label>
+            <label>TIME<input id="st-j-time" type="time" value="07:00"></label>
+            <p class="sub">DAYS</p>
+            <div class="st-days" id="st-j-days"></div>
+            <div class="row"><button type="button" class="primary" id="st-j-add">ADD JOB</button></div>
+          </details>
+        </details>
+        <ul class="inbox" id="st-queue"></ul>
+        <p class="msg" id="st-msg" hidden></p>
+        <p class="fine">Changes go to your Mac through your encrypted sync and happen within about a minute while Agent Station is running there. Access changes wait for your OK on the Mac.</p>
+      </div>
+    </section>
+
     <section class="panel lost" id="lost-panel" hidden>
       <h2>BEYOND THE HORIZON <span class="count" id="lost-count">0</span></h2>
       <ul class="list" id="lost-list"></ul>
@@ -509,7 +571,7 @@ const MAX_GROUPS = 200, MAX_GROUP_NAME = 60, MAX_STEPS = 100, MAX_STEP_TEXT = 20
 const COLORS = [
   { name: 'Violet', hex: '#b48cff' }, { name: 'Teal', hex: '#3fd0b0' }, { name: 'Pink', hex: '#ff7ac8' },
   { name: 'Lime', hex: '#b6e35a' }, { name: 'Sky', hex: '#6aa8ff' }, { name: 'Sand', hex: '#e8c48a' },
-  { name: 'Silver', hex: '#c8cce8' },
+  { name: 'Silver', hex: '#c8cce8' }, { name: 'Red', hex: '#f0503c' },
 ];
 
 const $ = (s) => document.querySelector(s);
@@ -724,6 +786,7 @@ function persist() {
     storageOk = true;
   } catch (e) { storageOk = false; }
   $('#storage-warning').hidden = storageOk;
+  if (typeof queueDepotSnapshot === 'function') queueDepotSnapshot();
 }
 function save() {
   stampChanges();
@@ -1063,6 +1126,7 @@ function fillDetail() {
   setMsg($('#d-msg'), '');
   renderSteps(t);
   updateStats();
+  fillGiveBox();
 }
 
 function renderSteps(t) {
@@ -2176,9 +2240,9 @@ async function deriveKey(pass, salt) {
   return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' },
     base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
-async function seal(obj) {
+async function seal(obj, aad) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: AAD }, syncKey, te.encode(JSON.stringify(obj)));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: aad || AAD }, syncKey, te.encode(JSON.stringify(obj)));
   return { iv: toB64(iv), data: toB64(ct) };
 }
 async function unseal(file, key, aad) {
@@ -2214,10 +2278,11 @@ async function ghReadPath(cfg, path) {
   return { sha: j.sha, file };
 }
 // Returns false on a write conflict (someone else saved first).
-async function ghWrite(cfg, file, sha) {
+async function ghWrite(cfg, file, sha) { return ghWritePath(cfg, SYNC_PATH, file, sha); }
+async function ghWritePath(cfg, path, file, sha) {
   const body = { message: 'Black Hole sync', content: toB64(te.encode(JSON.stringify(file))) };
   if (sha) body.sha = sha;
-  const res = await fetch(GH + '/repos/' + cfg.repo + '/contents/' + SYNC_PATH, {
+  const res = await fetch(GH + '/repos/' + cfg.repo + '/contents/' + path, {
     method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders(cfg.token)),
     body: JSON.stringify(body), cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer',
   });
@@ -2328,6 +2393,7 @@ async function syncNow() {
       lastSyncAt = Date.now();
       syncError = '';
       pullInbox();
+      pullStation();
       break;
     }
   } catch (e) {
@@ -2384,6 +2450,7 @@ function cleanInbox(payload) {
       agents: Array.isArray(x.agents) ? x.agents.slice(0, 12).map((a) => String(a).slice(0, 40)) : [],
       text: String(x.text || '').slice(0, 50000),
       failed: x.failed === true,
+      taskId: typeof x.taskId === 'string' && /^[A-Za-z0-9-]{1,64}$/.test(x.taskId) ? x.taskId : '',
     });
   }
   return out;
@@ -2402,6 +2469,9 @@ async function pullInbox() {
     }
     saveInbox();
     renderInbox();
+    let changed = false;
+    for (const it of inboxState.items) if (it.taskId && !it.failed && attachAnswer(it.taskId, it.agents[0] || 'An agent', it.text, it.id, it.at)) changed = true;
+    if (changed) { save(); renderLists(); fillDetail(); }
   } catch (e) {
     /* leave the last copy showing; the next sync tries again */
   } finally {
@@ -2459,6 +2529,381 @@ function renderInbox() {
 }
 setupFold('#inbox-toggle', '#inbox-body', 'inbox');
 renderInbox();
+
+// ---------------------------------------------------------------- giving a task to an agent
+// In Agent Station on the Mac this asks the app directly; on another device
+// it goes to the Mac as a command (see the AGENTS section below). Either way
+// the agent sees only this one task, and its answer is added to the notes.
+const IN_APP = !!(window.__TAURI__ && window.__TAURI__.core);
+/** Adds an agent's answer to a task's notes once (a short tag marks it). */
+function attachAnswer(taskId, agentName, text, itemId, at) {
+  const t = taskById(taskId);
+  if (!t) return false;
+  const tag = '⟨' + String(itemId).slice(0, 6) + '⟩';
+  if (t.notes.includes(tag)) return false;
+  const head = '\n\n— ' + agentName + "'s answer (" + new Date(at || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ') ' + tag + '\n';
+  const room = MAX_NOTES - t.notes.length - head.length;
+  if (room < 40) return false;
+  const body = text.length > room ? text.slice(0, room - 40).trimEnd() + '… (full answer in your inbox)' : text;
+  t.notes = (t.notes + head + body).replace(/^\n+/, '');
+  checkIn(t);
+  return true;
+}
+// Supply Depot: agents you've allowed may add to the shopping list. In the
+// Mac app the core hands their items here; it also gets a copy of the list
+// (names, amounts, checked) so those agents can see what's on it.
+let depotTimer = null;
+function queueDepotSnapshot() {
+  if (!IN_APP) return;
+  clearTimeout(depotTimer);
+  depotTimer = setTimeout(() => {
+    const items = state.shopping.map((it) => ({ name: it.name, list: it.list, qty: it.qty, checked: it.checked }));
+    window.__TAURI__.core.invoke('depot_snapshot', { items }).catch(() => {});
+  }, 800);
+}
+async function takeDepotItems() {
+  let got;
+  try { got = await window.__TAURI__.core.invoke('depot_take'); } catch (e) { return; }
+  if (!Array.isArray(got) || !got.length) return;
+  let added = 0;
+  const who = new Set();
+  for (const raw of got) {
+    const at = isoOf(Number(raw && raw.at) || Date.now());
+    const it = sanitizeItem({ id: raw.id, name: raw.name, qty: raw.qty, note: raw.note, list: raw.list, checked: false, createdAt: at, updatedAt: at });
+    if (!it || state.shopping.some((x) => x.id === it.id) || state.shopping.length >= MAX_SHOP) continue;
+    state.shopping.push(it);
+    added++;
+    const m = /^Added by ([^:]+)/.exec(it.note);
+    if (m) who.add(m[1]);
+  }
+  if (!added) return;
+  save();
+  renderShop();
+  if (typeof toast === 'function') toast(([...who].join(' and ') || 'An agent') + ' added ' + added + (added === 1 ? ' item' : ' items') + ' to your shopping list.', true);
+}
+if (IN_APP) {
+  setTimeout(() => { queueDepotSnapshot(); takeDepotItems(); }, 1500);
+  setInterval(takeDepotItems, 5000);
+}
+
+async function agentChoices() {
+  if (IN_APP) {
+    try { return (await window.__TAURI__.core.invoke('list_agents')).map((a) => ({ id: a.id, name: a.name, role: a.role })); } catch (e) { return []; }
+  }
+  return station && Array.isArray(station.agents) ? station.agents.map((a) => ({ id: a.id, name: a.name, role: a.role })) : [];
+}
+async function fillGiveBox() {
+  const t = selTask();
+  const list = t && t.status !== 'done' ? await agentChoices() : [];
+  $('#d-give-box').hidden = !list.length;
+  const pick = $('#d-agent'), keep = pick.value;
+  pick.textContent = '';
+  for (const a of list) { const o = document.createElement('option'); o.value = a.id; o.textContent = a.name + (a.role ? ' (' + a.role + ')' : ''); pick.append(o); }
+  if (keep && list.some((a) => a.id === keep)) pick.value = keep;
+}
+$('#d-give').addEventListener('click', async () => {
+  const t = selTask(); if (!t) return;
+  const agentId = $('#d-agent').value; if (!agentId) return;
+  const name = $('#d-agent').selectedOptions[0] ? $('#d-agent').selectedOptions[0].textContent.replace(/ \(.*\)$/, '') : 'The agent';
+  const args = { agentId, taskId: t.id, title: t.title, notes: t.notes, deadline: t.deadline ? new Date(t.deadline).toLocaleString() : '' };
+  const btn = $('#d-give');
+  btn.disabled = true;
+  if (IN_APP) {
+    setMsg($('#d-msg'), name + ' is working on it…');
+    try {
+      const item = await window.__TAURI__.core.invoke('task_to_agent', args);
+      if (item.failed) setMsg($('#d-msg'), item.text, 'err');
+      else {
+        attachAnswer(t.id, name, item.text, item.id, item.at);
+        save(); renderLists(); fillDetail();
+        setMsg($('#d-msg'), name + "'s answer was added to the notes.", 'ok');
+      }
+    } catch (e) { setMsg($('#d-msg'), typeof e === 'string' ? e : 'Couldn\'t hand it over.', 'err'); }
+  } else {
+    const ok = await sendCommand('task', args, 'Give "' + t.title + '" to ' + name);
+    if (ok) setMsg($('#d-msg'), 'Sent to your Mac. The answer will be added to the notes when it\'s done.', 'ok');
+  }
+  btn.disabled = false;
+});
+
+// ---------------------------------------------------------------- AGENTS (the station, from this device)
+// Agent Station on the Mac writes a snapshot of your agents, encrypted, to
+// blackhole-station.json; this page asks for changes by adding encrypted
+// commands to blackhole-commands.json. The Mac checks for them about every
+// 20 seconds while it's running and carries out only the kinds it knows.
+const STATION_PATH = 'blackhole-station.json';
+const STATION_AAD = new TextEncoder().encode('blackhole-station-v1');
+const COMMANDS_PATH = 'blackhole-commands.json';
+const COMMANDS_AAD = new TextEncoder().encode('blackhole-commands-v1');
+const STATION_CACHE = 'blackhole.station.v1';
+const SENT_KEY = 'blackhole.sent.v1';
+let station = (() => { try { return JSON.parse(localStorage.getItem(STATION_CACHE) || 'null'); } catch (e) { return null; } })();
+let sent = (() => { try { const x = JSON.parse(localStorage.getItem(SENT_KEY) || '[]'); return Array.isArray(x) ? x : []; } catch (e) { return []; } })();
+let stationBusy = false, stationPoll = 0;
+const stOpen = new Set();
+
+function saveSent() { try { localStorage.setItem(SENT_KEY, JSON.stringify(sent.slice(-40))); } catch (e) { /* ignore */ } }
+
+async function pullStation() {
+  if (IN_APP || !syncCfg || !syncKey || stationBusy) return;
+  stationBusy = true;
+  try {
+    const r = await ghReadPath(syncCfg, STATION_PATH);
+    if (r && r.file && r.file.format === 'blackhole-station' && r.file.salt === syncCfg.salt) {
+      const v = await unseal(r.file, syncKey, STATION_AAD);
+      if (v && Array.isArray(v.agents)) {
+        station = v;
+        try { localStorage.setItem(STATION_CACHE, JSON.stringify(v)); } catch (e) { /* too big: keep in memory */ }
+      }
+    }
+  } catch (e) { /* keep the last copy; the next sync tries again */ }
+  finally { stationBusy = false; }
+  renderStation();
+  fillGiveBox();
+}
+
+/** Adds one command for the Mac. Returns true once it's saved on GitHub. */
+async function sendCommand(kind, args, label) {
+  if (!syncCfg || !syncKey) { toast('Set up SYNC ACROSS DEVICES first (in MORE).'); return false; }
+  const cmd = { id: newId(), at: Date.now(), kind, args };
+  try {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const r = await ghReadPath(syncCfg, COMMANDS_PATH);
+      let list = [];
+      if (r && r.file && r.file.format === 'blackhole-commands' && r.file.salt === syncCfg.salt) {
+        try { const v = await unseal(r.file, syncKey, COMMANDS_AAD); if (v && Array.isArray(v.commands)) list = v.commands; } catch (e) { list = []; }
+      }
+      list = list.filter((c) => c && Date.now() - (c.at || 0) < 2 * 86400e3).slice(-30);
+      list.push(cmd);
+      const sealed = await seal({ commands: list }, COMMANDS_AAD);
+      const ok = await ghWritePath(syncCfg, COMMANDS_PATH, { format: 'blackhole-commands', v: 1, salt: syncCfg.salt, iv: sealed.iv, data: sealed.data }, r && r.sha);
+      if (ok) {
+        sent.push({ id: cmd.id, at: cmd.at, label });
+        saveSent();
+        renderStation();
+        startStationPoll();
+        return true;
+      }
+    }
+    throw new Error('GitHub kept reporting a conflict. Try again.');
+  } catch (e) {
+    setMsg($('#st-msg'), (e && e.message) || 'Couldn\'t send that.', 'err');
+    return false;
+  }
+}
+
+/** After sending, look for the Mac's answer every 15 seconds for 3 minutes. */
+function startStationPoll() {
+  clearInterval(stationPoll);
+  const until = Date.now() + 3 * 60e3;
+  stationPoll = setInterval(() => {
+    if (Date.now() > until) { clearInterval(stationPoll); return; }
+    pullStation();
+    pullInbox();
+  }, 15000);
+}
+
+const AGENT_COLORS = ['#b48cff', '#3fd0b0', '#ff7ac8', '#b6e35a', '#6aa8ff', '#e8c48a', '#c8cce8', '#f0503c'];
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function btn(label, fn, cls) { const b = el('button', cls || '', label); b.type = 'button'; b.addEventListener('click', fn); return b; }
+function field(label, input) { const l = el('label', '', label); l.append(input); return l; }
+function modelSelect(current) {
+  const sel = document.createElement('select');
+  const list = (station && Array.isArray(station.models) ? station.models.slice() : []);
+  if (current && !list.includes(current)) list.unshift(current);
+  for (const m of list) { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.append(o); }
+  sel.value = current || list[0] || '';
+  return sel;
+}
+
+function renderStation() {
+  const panel = $('#station-panel');
+  const show = !IN_APP && !!syncCfg && !!station && Array.isArray(station.agents);
+  panel.hidden = !show;
+  if (!show) return;
+  const agents = station.agents;
+  const byId = (id) => agents.find((a) => a.id === id);
+  $('#station-count').textContent = String(agents.length);
+  $('#st-updated').textContent = station.at ? 'From your Mac, ' + agoText(isoOf(station.at), Date.now()) + '.' : '';
+  const pause = $('#st-pause');
+  pause.textContent = station.paused ? 'RESUME' : 'PAUSE ALL';
+  const ul = $('#st-agents');
+  // Keep anything being typed in an open card.
+  const ae = document.activeElement;
+  const typing = !!ae && ul.contains(ae) && /INPUT|TEXTAREA|SELECT/.test(ae.tagName);
+  if (!typing) {
+    ul.textContent = '';
+    for (const a of agents) {
+      const li = el('li');
+      const head = el('div', 'ib-head');
+      const open = el('button', 'ib-open');
+      open.type = 'button';
+      open.setAttribute('aria-expanded', String(stOpen.has(a.id)));
+      const t = el('span', 'ib-title', a.name);
+      t.style.color = AGENT_COLORS.includes(a.color) ? a.color : '';
+      const state = a.working ? ['busy', 'WORKING'] : a.error ? ['err', 'PROBLEM'] : null;
+      if (state) t.append(el('span', 'st-state ' + state[0], state[1]));
+      const m = el('span', 'ib-meta', (a.role || 'No role') + ' · ' + a.model);
+      open.append(t, m);
+      open.addEventListener('click', () => { if (stOpen.has(a.id)) stOpen.delete(a.id); else stOpen.add(a.id); renderStation(); });
+      head.append(open);
+      li.append(head);
+      if (stOpen.has(a.id)) li.append(agentCard(a, byId));
+      ul.append(li);
+    }
+  }
+  // Jobs.
+  const jobs = Array.isArray(station.jobs) ? station.jobs : [];
+  $('#st-jobs-count').textContent = String(jobs.length);
+  const jl = $('#st-jobs');
+  jl.textContent = '';
+  for (const j of jobs) {
+    const li = el('li');
+    const ag = byId(j.agentId);
+    const time = Math.floor(j.minute / 60) + ':' + String(j.minute % 60).padStart(2, '0');
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].filter((_, i) => j.days && j.days[i]).join(', ');
+    li.append(el('span', 'ib-title', (j.enabled ? '' : '(off) ') + j.name), el('span', 'ib-meta', (ag ? ag.name : '?') + ' · ' + days + ' ' + time));
+    const row = el('div', 'row');
+    row.append(
+      btn('RUN NOW', () => sendCommand('job_run', { id: j.id }, 'Run "' + j.name + '"')),
+      btn(j.enabled ? 'TURN OFF' : 'TURN ON', () => sendCommand('job_save', { id: j.id, input: { name: j.name, agentId: j.agentId, message: j.message, minute: j.minute, days: j.days, enabled: !j.enabled } }, (j.enabled ? 'Turn off "' : 'Turn on "') + j.name + '"')),
+    );
+    const del = btn('DELETE', () => armThen(del, 'SURE?', () => sendCommand('job_delete', { id: j.id }, 'Delete "' + j.name + '"')), 'danger');
+    row.append(del);
+    li.append(row);
+    jl.append(li);
+  }
+  const ja = $('#st-j-agent'), keepJ = ja.value;
+  ja.textContent = '';
+  for (const a of agents) { const o = document.createElement('option'); o.value = a.id; o.textContent = a.name; ja.append(o); }
+  if (keepJ) ja.value = keepJ;
+  const hm = $('#st-h-model'), keepM = hm.value;
+  hm.textContent = '';
+  for (const mname of station.models || []) { const o = document.createElement('option'); o.value = mname; o.textContent = mname; hm.append(o); }
+  if (keepM) hm.value = keepM;
+  // Sent commands and what happened to them.
+  const results = Array.isArray(station.results) ? station.results : [];
+  const q = $('#st-queue');
+  q.textContent = '';
+  for (const c of sent.slice(-8).reverse()) {
+    const res = results.find((r) => r.id === c.id);
+    const li = el('li', res ? (res.ok ? 'ok' : 'err') : '', (res ? (res.ok ? 'Done: ' : 'Not done: ') + res.message : 'Waiting for your Mac: ' + c.label));
+    q.append(li);
+  }
+  for (const p of Array.isArray(station.pending) ? station.pending : []) {
+    const a = byId(p.agentId);
+    q.append(el('li', '', 'Waiting for your OK on the Mac: ' + (a ? a.name : 'an agent') + ' access change.'));
+  }
+}
+
+/** The open card for one agent: chat, settings, access, links, fire. */
+function agentCard(a, byId) {
+  const card = el('div', 'st-card');
+  const chat = el('ul', 'st-chat');
+  for (const msg of a.chat || []) {
+    const mine = msg.role !== 'assistant' && !msg.via;
+    const li = el('li', mine ? 'me' : 'them');
+    li.append(el('span', 'st-who', msg.role === 'assistant' ? a.name.toUpperCase() : msg.via ? 'FROM ' + String(msg.via).toUpperCase() : msg.scheduled ? String(msg.scheduled).toUpperCase() : 'YOU'));
+    li.append(document.createTextNode(msg.content || '')); // plain text only
+    chat.append(li);
+  }
+  if (!(a.chat || []).length) chat.append(el('li', 'them', 'No messages yet.'));
+  card.append(chat);
+  const box = document.createElement('textarea');
+  box.rows = 2; box.maxLength = 4000; box.placeholder = 'Message ' + a.name;
+  box.setAttribute('aria-label', 'Message ' + a.name);
+  const send = btn('SEND', async () => {
+    const text = box.value.trim(); if (!text) return;
+    send.disabled = true;
+    if (await sendCommand('chat', { agentId: a.id, text }, 'Message to ' + a.name)) { box.value = ''; setMsg($('#st-msg'), 'Sent. ' + a.name + "'s reply shows up here and in your inbox.", 'ok'); }
+    send.disabled = false;
+  }, 'primary');
+  card.append(box, el('div', 'row'));
+  card.lastChild.append(send);
+
+  const settings = el('details', 'lengths');
+  settings.append(el('summary', '', 'SETTINGS'));
+  const nm = document.createElement('input'); nm.maxLength = 40; nm.value = a.name;
+  const role = document.createElement('input'); role.maxLength = 80; role.value = a.role || '';
+  const model = modelSelect(a.model);
+  const instr = document.createElement('textarea'); instr.rows = 3; instr.maxLength = 8000; instr.value = a.instructions || '';
+  const mem = document.createElement('input'); mem.type = 'checkbox'; mem.checked = !!a.memory;
+  const memL = el('label', 'check'); memL.append(mem, document.createTextNode(' Remember chats'));
+  settings.append(field('NAME', nm), field('ROLE', role), field('MODEL', model), field('INSTRUCTIONS', instr), memL);
+  const srow = el('div', 'row');
+  srow.append(btn('SAVE', () => sendCommand('edit', { id: a.id, input: { name: nm.value.trim(), role: role.value.trim(), instructions: instr.value.trim(), model: model.value, color: a.color, memory: mem.checked } }, 'Save ' + a.name)));
+  settings.append(srow);
+  card.append(settings);
+
+  const access = el('details', 'lengths');
+  access.append(el('summary', '', 'ACCESS'));
+  const ar = document.createElement('select');
+  for (const [v, t] of [['none', 'No Archive access'], ['read', 'Archive: read only'], ['write', 'Archive: read and write']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; ar.append(o); }
+  ar.value = a.archive || 'none';
+  const web = document.createElement('input'); web.type = 'checkbox'; web.checked = !!a.web;
+  const webL = el('label', 'check'); webL.append(web, document.createTextNode(' Can read public web pages'));
+  const depot = document.createElement('input'); depot.type = 'checkbox'; depot.checked = !!a.depot;
+  const depotL = el('label', 'check'); depotL.append(depot, document.createTextNode(' Can see and add to your shopping list'));
+  access.append(field('ARCHIVE', ar), webL, depotL, el('p', 'fine', 'Access changes from here wait for your OK on the Mac. An agent that reads web pages can\'t also use the shopping list.'));
+  const arow = el('div', 'row');
+  arow.append(btn('ASK THE MAC', () => sendCommand('access', { id: a.id, archive: ar.value, web: web.checked, depot: depot.checked }, 'Access change for ' + a.name)));
+  access.append(arow);
+  card.append(access);
+
+  const links = el('details', 'lengths');
+  links.append(el('summary', '', 'PASSES WORK TO'));
+  const out = [...(a.links || []).map((id) => [id, false]), ...(a.suggest || []).map((id) => [id, true])];
+  for (const [id, sug] of out) {
+    const b = byId(id); if (!b) continue;
+    const row = el('div', 'row');
+    row.append(el('span', 'ib-meta', (sug ? '? ' : '▸ ') + b.name + (sug ? ' (suggests)' : '')));
+    const un = btn('UNLINK', () => armThen(un, 'SURE?', () => sendCommand('unlink', { from: a.id, to: id }, 'Unlink ' + a.name + ' → ' + b.name)));
+    row.append(un);
+    links.append(row);
+  }
+  const to = document.createElement('select');
+  for (const b of station.agents.filter((x) => x.id !== a.id)) { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; to.append(o); }
+  const mode = document.createElement('select');
+  for (const [v, t] of [['auto', 'sends automatically'], ['suggest', 'can suggest']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; mode.append(o); }
+  const lrow = el('div', 'row');
+  lrow.append(to, mode, btn('LINK', () => { const b = byId(to.value); if (b) sendCommand('link', { from: a.id, to: b.id, suggest: mode.value === 'suggest' }, 'Link ' + a.name + ' → ' + b.name); }));
+  if (station.agents.length > 1) links.append(lrow);
+  card.append(links);
+
+  const fire = btn('FIRE ' + a.name.toUpperCase(), () => armThen(fire, 'TAP AGAIN TO FIRE', () => sendCommand('fire', { id: a.id }, 'Fire ' + a.name)), 'danger');
+  const frow = el('div', 'row'); frow.append(fire);
+  card.append(frow);
+  return card;
+}
+
+$('#st-pause').addEventListener('click', () => {
+  const on = !(station && station.paused);
+  sendCommand('pause', { on }, on ? 'Pause all agents' : 'Resume agents');
+});
+$('#st-hire').addEventListener('click', async () => {
+  const name = $('#st-h-name').value.trim();
+  if (!name) { setMsg($('#st-msg'), 'Give the agent a name.', 'err'); return; }
+  const used = new Set((station.agents || []).map((a) => a.color));
+  const color = AGENT_COLORS.find((c) => !used.has(c)) || AGENT_COLORS[0];
+  const ok = await sendCommand('hire', { input: { name, role: $('#st-h-role').value.trim(), instructions: $('#st-h-instr').value.trim(), model: $('#st-h-model').value, color, memory: false } }, 'Hire ' + name);
+  if (ok) { $('#st-h-name').value = ''; $('#st-h-role').value = ''; $('#st-h-instr').value = ''; setMsg($('#st-msg'), 'Sent. ' + name + ' will show up here within a minute or so.', 'ok'); }
+});
+['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach((d, i) => {
+  const l = document.createElement('label');
+  const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'vh'; c.checked = i < 5;
+  l.append(c, document.createTextNode(d));
+  $('#st-j-days').append(l);
+});
+$('#st-j-add').addEventListener('click', async () => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec($('#st-j-time').value || '');
+  const days = Array.from(document.querySelectorAll('#st-j-days input')).map((c) => c.checked);
+  const name = $('#st-j-name').value.trim(), message = $('#st-j-text').value.trim();
+  if (!name || !message || !m || !days.some(Boolean)) { setMsg($('#st-msg'), 'Fill in a name, a message, a time and at least one day.', 'err'); return; }
+  const ok = await sendCommand('job_save', { id: '', input: { name, agentId: $('#st-j-agent').value, message, minute: Number(m[1]) * 60 + Number(m[2]), days, enabled: true } }, 'Add job "' + name + '"');
+  if (ok) { $('#st-j-name').value = ''; $('#st-j-text').value = ''; }
+});
+setupFold('#station-toggle', '#station-body', 'station');
+renderStation();
 
 // -- settings UI
 function setSyncStatus(text, kind) { setMsg($('#sy-status'), text, kind); }
@@ -2568,8 +3013,10 @@ $('#sy-off').addEventListener('click', () => armThen($('#sy-off'), 'TAP AGAIN TO
   inboxState.items = [];
   inboxState.read.clear();
   inboxState.hidden.clear();
-  try { localStorage.removeItem(INBOX_CACHE); } catch (e) { /* ignore */ }
+  try { localStorage.removeItem(INBOX_CACHE); localStorage.removeItem(STATION_CACHE); localStorage.removeItem(SENT_KEY); } catch (e) { /* ignore */ }
+  station = null; sent = [];
   renderInbox();
+  renderStation();
   renderSync();
   toast('This device stopped syncing. Your lists stay here, and the copy on GitHub is untouched.', true);
 }));
@@ -2758,9 +3205,94 @@ function place(key, type, id, x, y, g) {
   pos.set(key, { x, y, type, id, r: Math.hypot(x - g.cx, y - g.cy), a: Math.atan2(y - g.cy, x - g.cx) });
 }
 
+// Keeps planets (and loose tasks) from bunching up. Their distance from the
+// black hole means something (pull), so only their angle is nudged: bodies
+// on nearly the same orbit are eased apart along it until they have room.
+let spacedOnce = false;
+function spaceOut(g, dt, at) {
+  const bodies = [];
+  const angleOf = (key, id) => (angles.has(key) ? angles.get(key) : seedAngle(id + key[0]));
+  for (const t of state.tasks) {
+    if (t.status !== 'orbit' || t.groupId) continue;
+    const key = 't:' + t.id;
+    bodies.push({ key, r: radiusFor(pullOf(t, at), g), a: angleOf(key, t.id), room: 7 });
+  }
+  for (const grp of state.groups) {
+    const kids = moonsOf(grp);
+    const gp = kids.length ? kids.reduce((sum, t) => sum + pullOf(t, at), 0) / kids.length : 0;
+    const key = 'g:' + grp.id;
+    bodies.push({ key, r: radiusFor(gp, g), a: angleOf(key, grp.id), room: kids.length ? 16 : 9 });
+  }
+  if (bodies.length < 2) return;
+  const passes = spacedOnce ? 1 : 120; // settle at once the first time
+  const k = spacedOnce ? Math.min(1, dt * 6) : 0.4;
+  spacedOnce = true;
+  for (let pass = 0; pass < passes; pass++) {
+    for (let i = 0; i < bodies.length; i++) {
+      const p = bodies[i];
+      for (let j = i + 1; j < bodies.length; j++) {
+        const q = bodies[j];
+        const need = p.room + q.room;
+        if (Math.abs(p.r - q.r) >= need) continue; // different orbits: they pass freely
+        const dx = Math.cos(p.a) * p.r - Math.cos(q.a) * q.r, dy = Math.sin(p.a) * p.r - Math.sin(q.a) * q.r;
+        const d = Math.hypot(dx, dy);
+        if (d >= need) continue;
+        let gap = Math.atan2(Math.sin(q.a - p.a), Math.cos(q.a - p.a)); // q's angle relative to p, -pi..pi
+        if (gap === 0) gap = p.key < q.key ? 1e-3 : -1e-3;
+        const push = Math.min(4, (need - d) * 0.5) * k; // pixels each
+        const dir = gap > 0 ? 1 : -1;
+        p.a -= (dir * push) / Math.max(8, p.r);
+        q.a += (dir * push) / Math.max(8, q.r);
+      }
+    }
+  }
+  for (const b of bodies) angles.set(b.key, b.a);
+}
+
+// Labels stay where they are: a name only moves when it would go off screen
+// or has been covering another name or planet for a moment, and one that had
+// to hide comes back only once there's steady room for it. Names already on
+// screen keep their spot; newcomers fit around them.
+const LABEL_HOLD = 450, LABEL_RETURN = 350;
+const labelMemo = new Map(); // key -> { side, badSince, freeSince, seen }
+let labelSweep = 0;
+/** options: [{ side, b, onScreen }] in order of preference. */
+function stickyBox(key, options, tm, isFree, force) {
+  let m = labelMemo.get(key);
+  const fresh = !m;
+  if (!m) { m = { side: null, badSince: 0, freeSince: 0, seen: tm }; labelMemo.set(key, m); }
+  m.seen = tm;
+  const cur = m.side != null ? options.find((o) => o.side === m.side) : null;
+  if (force) {
+    const o = cur && cur.onScreen ? cur : options.find((x) => x.onScreen) || options[0];
+    m.side = o.side; m.badSince = 0;
+    return o.b;
+  }
+  if (cur && cur.onScreen) {
+    if (isFree(cur.b)) { m.badSince = 0; return cur.b; }
+    if (!m.badSince) m.badSince = tm;
+    if (tm - m.badSince < LABEL_HOLD) return cur.b; // something passing by: wait it out
+  }
+  const alt = options.find((o) => o !== cur && o.onScreen && isFree(o.b));
+  if (alt && (fresh || cur || (m.freeSince && tm - m.freeSince >= LABEL_RETURN))) {
+    m.side = alt.side; m.badSince = 0; m.freeSince = 0;
+    return alt.b;
+  }
+  if (alt) { if (!m.freeSince) m.freeSince = tm; } else m.freeSince = 0;
+  m.side = null; m.badSince = 0;
+  return null;
+}
+function sweepLabels(tm) {
+  if (tm - labelSweep < 5000) return;
+  labelSweep = tm;
+  for (const [k, m] of labelMemo) if (tm - m.seen > 3000) labelMemo.delete(k);
+}
+const heldFirst = (a, b) => (b.rank - a.rank) || ((labelMemo.get(b.key) || {}).side != null) - ((labelMemo.get(a.key) || {}).side != null);
+
 function drawScene(g, tm, dt) {
   pos.clear();
   const at = Date.now();
+  spaceOut(g, dt, at);
   const labels = [];
   const blinkOn = (p) => p >= 0.9 && Math.floor(tm / 250) % 2 === 0;
 
@@ -2773,7 +3305,7 @@ function drawScene(g, tm, dt) {
     place('t:' + t.id, 'task', t.id, x, y, g);
     const focus = isSel('task', t.id) || isHov('task', t.id);
     planet(x, y, blinkOn(p) ? '#ffffff' : pullColor(p), focus);
-    labels.push({ text: trunc(t.title.toUpperCase(), focus ? 30 : 12), x, y, c: focus ? '#ffffff' : '#7d84b8', rank: focus ? 3 : 1 });
+    labels.push({ key: 'o:t:' + t.id, text: trunc(t.title.toUpperCase(), focus ? 30 : 12), x, y, c: focus ? '#ffffff' : '#7d84b8', rank: focus ? 3 : 1 });
   }
 
   // Planets orbit at the average pull of their moons. A moon more urgent than
@@ -2809,17 +3341,19 @@ function drawScene(g, tm, dt) {
       moon(m.x, m.y, blinkOn(m.mp) ? '#ffffff' : pullColor(m.mp), focus);
       place('t:' + m.t.id, 'task', m.t.id, m.x, m.y, g);
       if (focus || gFocus || kidFocus || m.s > 0.5) {
-        labels.push({ text: trunc(m.t.title.toUpperCase(), focus ? 30 : 14), x: m.x, y: m.y, c: focus ? '#ffffff' : '#9aa0d0', rank: focus ? 3 : 2 });
+        labels.push({ key: 'o:m:' + m.t.id, text: trunc(m.t.title.toUpperCase(), focus ? 30 : 14), x: m.x, y: m.y, c: focus ? '#ffffff' : '#9aa0d0', rank: focus ? 3 : 2 });
       }
     };
     moons.filter((m) => m.back).forEach(drawMoon);
     groupPlanet(x, y, grp.color, gFocus);
     moons.filter((m) => !m.back).forEach(drawMoon);
-    labels.push({ text: trunc(grp.name.toUpperCase(), gFocus ? 30 : 14), x, y, c: gFocus ? '#ffffff' : grp.color, rank: gFocus ? 3 : 2.5, pad: 6 });
+    labels.push({ key: 'o:g:' + grp.id, text: trunc(grp.name.toUpperCase(), gFocus ? 30 : 14), x, y, c: gFocus ? '#ffffff' : grp.color, rank: gFocus ? 3 : 2.5, pad: 6 });
   }
 
-  // Labels: the most important claim space first; others skip spots that would overlap.
-  labels.sort((a, b) => b.rank - a.rank);
+  // Labels: the most important claim space first, then names already showing;
+  // others skip spots that would overlap.
+  labels.sort(heldFirst);
+  sweepLabels(tm);
   // Labels also stay off every sprite and off the EVENT HORIZON caption.
   const placed = [{ x: g.cx - 26, y: g.cy + g.inner + 2, w: 52, h: 7 }], drawn = [];
   for (const q of pos.values()) {
@@ -2831,8 +3365,10 @@ function drawScene(g, tm, dt) {
     const w = textWidth(l.text), padX = l.pad || 5;
     const right = { x: l.x + padX + 1, y: l.y - 3, w: w + 2, h: 7 };
     const left = { x: l.x - padX - 2 - w, y: l.y - 3, w: w + 2, h: 7 };
-    const options = right.x + right.w > W ? [left, right] : [right, left];
-    const box = l.rank >= 3 ? options[0] : options.find((b) => !overlaps(b));
+    const inView = (b) => b.x >= 0 && b.x + b.w <= W && b.y >= 0 && b.y + b.h <= H;
+    const options = [{ side: 'r', b: right, onScreen: inView(right) }, { side: 'l', b: left, onScreen: inView(left) }];
+    // The label's text changes length when focused, so focus gets its own memory.
+    const box = stickyBox(l.key + (l.rank >= 3 ? ':f' : ''), options, tm, (b) => !overlaps(b), l.rank >= 3);
     if (!box) continue; // the dot still shows; its title is in the list
     placed.push(box);
     drawn.push({ l, box });
@@ -3440,17 +3976,22 @@ function drawPlanetView(tm, dt, since) {
     const focus = isSel('task', t.id) || isHov('task', t.id);
     if (focus) brackets(mx, my, 4);
     pos.set('t:' + t.id, { x: mx, y: my, type: 'task', id: t.id, r: 0, a: 0 });
-    labels.push({ x: mx, y: my, focus, name: trunc(t.title.toUpperCase(), focus ? 26 : 16), sub: dueText(t, at).toUpperCase(), c: pullColor(mp) });
+    labels.push({ key: 'z:' + t.id, rank: focus ? 1 : 0, x: mx, y: my, focus, name: trunc(t.title.toUpperCase(), focus ? 26 : 16), sub: dueText(t, at).toUpperCase(), c: pullColor(mp) });
   });
   // Labels: two lines each, placed beside the moon on whichever side has room.
   const placed = [{ x: cx - R - 2, y: cy - R - 2, w: R * 2 + 4, h: R * 2 + 4 }];
   const overlaps = (b) => placed.some((q) => b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h);
-  labels.sort((a, b) => b.focus - a.focus);
+  // Moons are sprites too: names keep off them.
+  for (const l of labels) placed.push({ x: l.x - 3, y: l.y - 3, w: 7, h: 7 });
+  labels.sort(heldFirst);
+  sweepLabels(tm);
   for (const l of labels) {
     const w = Math.max(textWidth(l.name), textWidth(l.sub)) + 2;
-    const opts = [{ x: l.x + 6, y: l.y - 6, w, h: 13 }, { x: l.x - 6 - w, y: l.y - 6, w, h: 13 }, { x: l.x - w / 2, y: l.y + 5, w, h: 13 }, { x: l.x - w / 2, y: l.y - 19, w, h: 13 }]
-      .filter((b) => b.x >= 0 && b.x + b.w <= W && b.y >= 10 && b.y + b.h <= H - 8);
-    const box = l.focus ? (opts[0] || { x: l.x + 6, y: l.y - 6, w, h: 13 }) : opts.find((b) => !overlaps(b));
+    const sides = [['r', { x: l.x + 6, y: l.y - 6, w, h: 13 }], ['l', { x: l.x - 6 - w, y: l.y - 6, w, h: 13 }], ['b', { x: l.x - w / 2, y: l.y + 5, w, h: 13 }], ['t', { x: l.x - w / 2, y: l.y - 19, w, h: 13 }]];
+    const opts = sides.map(([side, b]) => ({ side, b, onScreen: b.x >= 0 && b.x + b.w <= W && b.y >= 10 && b.y + b.h <= H - 8 }));
+    const ownSprite = (b) => b.x < l.x + 4 && l.x - 3 < b.x + b.w && b.y < l.y + 4 && l.y - 3 < b.y + b.h;
+    const free = (b) => !placed.some((q) => !(q.w === 7 && q.x === l.x - 3 && q.y === l.y - 3) && b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h) && !ownSprite(b);
+    const box = stickyBox(l.key + (l.focus ? ':f' : ''), opts, tm, free, l.focus);
     if (!box) continue;
     placed.push(box);
     if (l.focus) { ctx.fillStyle = 'rgba(5,4,11,0.85)'; ctx.fillRect(box.x - 1, box.y - 1, box.w + 1, box.h + 1); }
