@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0a057zONxAPp+CWsnM+nJ0pMTQmLBvjMoXSDzvqDey4='; style-src 'sha256-lDv/W/QFoJKDov5CEmllEp1VicdM+BvIwSPrhBnOc34='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mC8etfwvrKeCh+dEEs82DCoUDWRSQVJ66HHHuOJNPgo='; style-src 'sha256-lDv/W/QFoJKDov5CEmllEp1VicdM+BvIwSPrhBnOc34='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -500,6 +500,11 @@ button.mini { padding: 5px 10px; box-shadow: none; }
     <section class="panel tools">
       <details id="more-box">
         <summary>MORE</summary>
+        <p class="sub">CLOCK ON THIS DEVICE</p>
+        <div class="row clock-row" role="radiogroup" aria-label="Clock">
+          <label class="check"><input type="radio" name="clock" value="12" id="clock-12"> Regular (3:05 PM)</label>
+          <label class="check"><input type="radio" name="clock" value="24" id="clock-24"> Military (15:05)</label>
+        </div>
         <p class="sub">ALERTS ON THIS DEVICE</p>
         <div class="row"><button type="button" id="alerts">ENABLE ALERTS</button></div>
 
@@ -513,7 +518,7 @@ button.mini { padding: 5px 10px; box-shadow: none; }
           <button type="button" id="nt-copy">COPY</button>
         </div>
         <label class="check"><input type="checkbox" id="nt-on"> Focus timer alerts</label>
-        <label class="check"><input type="checkbox" id="nt-tasks"> Deadline alerts (24 hours before, 1 hour before, and when a task crosses)</label>
+        <label class="check"><input type="checkbox" id="nt-tasks"> Event horizon alerts (24 hours before a task crosses, 1 hour before, and when it does)</label>
         <div class="row">
           <button type="button" id="nt-test">SEND TEST</button>
           <button type="button" id="nt-new">NEW TOPIC</button>
@@ -552,7 +557,7 @@ button.mini { padding: 5px 10px; box-shadow: none; }
             <button type="button" id="import-no">CANCEL</button>
           </div>
         </div>
-        <p class="fine">Pull = 85% deadline + 15% neglect (7 days). A task reaches the center at its deadline. Tasks are saved in this browser on this device. The page talks to only two places on the internet: ntfy.sh if phone alerts are on, and api.github.com if sync is on.</p>
+        <p class="fine">A task with a deadline moves in steadily and crosses the event horizon at its deadline. A task without one crosses 7 days after its last check-in. Tasks are saved in this browser on this device. The page talks to only two places on the internet: ntfy.sh if phone alerts are on, and api.github.com if sync is on.</p>
       </details>
     </section>
   </aside>
@@ -561,8 +566,10 @@ button.mini { padding: 5px 10px; box-shadow: none; }
 'use strict';
 
 // ---------------------------------------------------------------- settings
-const WEIGHT = 0.85;        // share of pull that comes from the deadline
-const NEGLECT_DAYS = 7;     // days without a check-in until neglect is maxed
+const NEGLECT_DAYS = 7;     // a task with no deadline crosses this long after its last check-in
+// Tasks with no deadline started being swallowed with this version; time
+// before it doesn't count, so older tasks get a full week first.
+const NEGLECT_RULE_START = Date.parse('2026-10-13T00:00:00-05:00');
 const DAY = 864e5;
 const STORE_KEY = 'blackhole.v1';
 const MAX_TITLE = 120, MAX_NOTES = 4000, MAX_TASKS = 5000, MAX_CHECKINS = 500;
@@ -598,13 +605,22 @@ function deadlineScore(t, at) {
 
 // Time since the last check-in (or creation) over the neglect limit (0..1).
 function neglectScore(t, at) {
-  const last = ms(t.lastCheckIn || t.createdAt);
+  const last = Math.max(ms(t.lastCheckIn || t.createdAt) || 0, NEGLECT_RULE_START);
   return clamp01((at - last) / (NEGLECT_DAYS * DAY));
 }
 
+// With a deadline, only the deadline moves a task: it starts at the edge and
+// crosses the event horizon at the deadline. Without one, it crosses
+// NEGLECT_DAYS after its last check-in (each check-in starts that over).
 function pullOf(t, at) {
-  if (t.deadline && at >= ms(t.deadline)) return 1;
-  return Math.min(1, WEIGHT * deadlineScore(t, at) + (1 - WEIGHT) * neglectScore(t, at));
+  if (t.deadline) return at >= ms(t.deadline) ? 1 : deadlineScore(t, at);
+  return neglectScore(t, at);
+}
+
+/** When this task will cross the event horizon (ms), as things stand. */
+function crossAt(t) {
+  if (t.deadline) return ms(t.deadline);
+  return Math.max(ms(t.lastCheckIn || t.createdAt) || 0, NEGLECT_RULE_START) + NEGLECT_DAYS * DAY;
 }
 
 const moonsOf = (g) => state.tasks.filter((t) => t.status === 'orbit' && t.groupId === g.id);
@@ -825,6 +841,16 @@ function stepsText(t) {
   return t.checklist.filter((s) => s.done).length + '/' + t.checklist.length + ' steps';
 }
 function pad(n) { return String(n).padStart(2, '0'); }
+// Regular (3:05 PM) or military (15:05) time, chosen per device in MORE.
+// Shared with the warehouse window (same key).
+const CLOCK_KEY = 'agentstation.clock';
+function clock24() { try { return localStorage.getItem(CLOCK_KEY) === '24'; } catch (e) { return false; } }
+const clockOpts = () => (clock24() ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : { hour: 'numeric', minute: '2-digit', hour12: true });
+function whenText(t) { return new Date(t).toLocaleString([], Object.assign({ month: 'short', day: 'numeric' }, clockOpts())); }
+function minuteText(m) {
+  const h = Math.floor(m / 60), mm = pad(m % 60);
+  return clock24() ? pad(h) + ':' + mm : ((h % 12) || 12) + ':' + mm + (h < 12 ? ' AM' : ' PM');
+}
 function toLocalInput(s) {
   const d = new Date(s);
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
@@ -895,11 +921,13 @@ let warned = (() => {
 function checkWarnings() {
   const at = Date.now(), hits = [];
   for (const t of state.tasks) {
-    if (t.status !== 'orbit' || !t.deadline) continue;
-    const left = ms(t.deadline) - at;
+    if (t.status !== 'orbit') continue;
+    const cross = crossAt(t);
+    const left = cross - at;
     if (left <= 0) continue;
     const prev = warned[t.id];
-    const w = prev && prev.d === t.deadline ? prev : { d: t.deadline, h24: false, h1: false };
+    const key = isoOf(cross);
+    const w = prev && prev.d === key ? prev : { d: key, h24: false, h1: false };
     let hit = false;
     if (left <= HOUR_MS && !w.h1) { w.h1 = w.h24 = true; hit = true; }
     else if (left <= 24 * HOUR_MS && !w.h24) { w.h24 = true; hit = true; }
@@ -1193,7 +1221,7 @@ function updateStats() {
   const line = (text) => { const p = document.createElement('p'); p.textContent = text; box.append(p); };
   if (t.status === 'orbit') {
     const p = pullOf(t, at);
-    line('PULL ' + pct(p) + '  (deadline ' + pct(deadlineScore(t, at)) + ', neglect ' + pct(neglectScore(t, at)) + ')');
+    line('PULL ' + pct(p) + (t.deadline ? '  (crosses at its deadline)' : '  (no deadline: crosses ' + NEGLECT_DAYS + ' days after the last check-in)'));
     const meter = document.createElement('div'); meter.className = 'meter';
     const fill = document.createElement('div');
     fill.style.width = pct(p);
@@ -1201,7 +1229,7 @@ function updateStats() {
     meter.append(fill);
     box.append(meter);
   } else if (t.status === 'swallowed') {
-    line('Swallowed ' + agoText(t.swallowedAt, at) + '. To rescue it, set a new future deadline or clear it.');
+    line('Swallowed ' + agoText(t.swallowedAt, at) + '. ' + (t.deadline ? 'To rescue it, set a new future deadline or clear it.' : 'Rescuing it counts as a check-in.'));
   } else {
     line('Completed ' + agoText(t.completedAt, at) + '.');
   }
@@ -1643,7 +1671,7 @@ function createGroup() {
 $('#export').addEventListener('click', () => {
   const data = {
     app: 'agent-station-black-hole', version: 3, exportedAt: isoOf(Date.now()),
-    settings: { deadlineWeight: WEIGHT, neglectDays: NEGLECT_DAYS }, groups: state.groups, tasks: state.tasks,
+    settings: { neglectDays: NEGLECT_DAYS }, groups: state.groups, tasks: state.tasks,
     shopping: state.shopping,
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
@@ -1711,6 +1739,16 @@ function refreshAlertsButton() {
   else if (Notification.permission === 'denied') { b.textContent = 'ALERTS BLOCKED'; b.disabled = true; b.title = 'Allow notifications for this file in your browser settings.'; }
   else { b.textContent = 'ENABLE ALERTS'; b.disabled = false; }
 }
+$(clock24() ? '#clock-24' : '#clock-12').checked = true;
+for (const r of document.querySelectorAll('input[name="clock"]')) {
+  r.addEventListener('change', () => {
+    try { localStorage.setItem(CLOCK_KEY, r.value); } catch (e) { /* stays as it was */ }
+    renderInbox();
+    renderStation();
+    toast(r.value === '24' ? 'Military time (15:05).' : 'Regular time (3:05 PM).', true);
+  });
+}
+
 $('#alerts').addEventListener('click', () => {
   try {
     const p = Notification.requestPermission();
@@ -2078,8 +2116,8 @@ function taskAlertPlan() {
   const out = [];
   if (!ntfy.deadlines) return out;
   for (const t of state.tasks) {
-    if (t.status !== 'orbit' || !t.deadline) continue;
-    const d = ms(t.deadline), g = t.groupId && groupById(t.groupId);
+    if (t.status !== 'orbit') continue;
+    const d = crossAt(t), g = t.groupId && groupById(t.groupId);
     const name = '"' + t.title + '"' + (g ? ' (' + g.name + ')' : '');
     const key = 't' + t.id.replace(/[^A-Za-z0-9]/g, '').slice(0, 30);
     out.push(
@@ -2135,7 +2173,7 @@ $('#nt-tasks').addEventListener('change', (e) => {
   ntfy.deadlines = e.target.checked;
   saveNtfy();
   queueTaskAlertSync();
-  setNtfyStatus(ntfy.deadlines ? 'On. Tasks with deadlines will alert your phone 24 hours before, 1 hour before, and when they cross.' : 'Off. Scheduled deadline alerts were cancelled.', 'ok');
+  setNtfyStatus(ntfy.deadlines ? 'On. Tasks will alert your phone 24 hours before, 1 hour before, and when they cross the event horizon.' : 'Off. Scheduled deadline alerts were cancelled.', 'ok');
 });
 $('#nt-on').addEventListener('change', (e) => {
   ntfy.enabled = e.target.checked;
@@ -2497,7 +2535,7 @@ function renderInbox() {
     open.setAttribute('aria-expanded', String(inboxOpen.has(it.id)));
     const t = document.createElement('span'); t.className = 'ib-title'; t.textContent = it.job;
     const m = document.createElement('span'); m.className = 'ib-meta';
-    m.textContent = it.agents.join(' → ') + (it.at ? ' · ' + new Date(it.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
+    m.textContent = it.agents.join(' → ') + (it.at ? ' · ' + whenText(it.at) : '');
     open.append(t, m);
     open.addEventListener('click', () => {
       if (inboxOpen.has(it.id)) inboxOpen.delete(it.id); else inboxOpen.add(it.id);
@@ -2605,7 +2643,7 @@ $('#d-give').addEventListener('click', async () => {
   const t = selTask(); if (!t) return;
   const agentId = $('#d-agent').value; if (!agentId) return;
   const name = $('#d-agent').selectedOptions[0] ? $('#d-agent').selectedOptions[0].textContent.replace(/ \(.*\)$/, '') : 'The agent';
-  const args = { agentId, taskId: t.id, title: t.title, notes: t.notes, deadline: t.deadline ? new Date(t.deadline).toLocaleString() : '' };
+  const args = { agentId, taskId: t.id, title: t.title, notes: t.notes, deadline: t.deadline ? new Date(t.deadline).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + minuteText(new Date(t.deadline).getHours() * 60 + new Date(t.deadline).getMinutes()) : '' };
   const btn = $('#d-give');
   btn.disabled = true;
   if (IN_APP) {
@@ -2724,7 +2762,8 @@ function renderStation() {
   const agents = station.agents;
   const byId = (id) => agents.find((a) => a.id === id);
   $('#station-count').textContent = String(agents.length);
-  $('#st-updated').textContent = station.at ? 'From your Mac, ' + agoText(isoOf(station.at), Date.now()) + '.' : '';
+  $('#st-updated').textContent = (station.at ? 'From your Mac, ' + agoText(isoOf(station.at), Date.now()) + '.' : '')
+    + (station.battery ? ' Battery saver is on at your Mac: nothing runs and it isn\'t checking for messages, so what you send waits until it\'s turned off.' : '');
   const pause = $('#st-pause');
   pause.textContent = station.paused ? 'RESUME' : 'PAUSE ALL';
   const ul = $('#st-agents');
@@ -2760,7 +2799,7 @@ function renderStation() {
   for (const j of jobs) {
     const li = el('li');
     const ag = byId(j.agentId);
-    const time = Math.floor(j.minute / 60) + ':' + String(j.minute % 60).padStart(2, '0');
+    const time = minuteText(j.minute);
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].filter((_, i) => j.days && j.days[i]).join(', ');
     li.append(el('span', 'ib-title', (j.enabled ? '' : '(off) ') + j.name), el('span', 'ib-meta', (ag ? ag.name : '?') + ' · ' + days + ' ' + time));
     const row = el('div', 'row');
@@ -2840,13 +2879,15 @@ function agentCard(a, byId) {
   const ar = document.createElement('select');
   for (const [v, t] of [['none', 'No Archive access'], ['read', 'Archive: read only'], ['write', 'Archive: read and write']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; ar.append(o); }
   ar.value = a.archive || 'none';
-  const web = document.createElement('input'); web.type = 'checkbox'; web.checked = !!a.web;
-  const webL = el('label', 'check'); webL.append(web, document.createTextNode(' Can read public web pages'));
+  const web = document.createElement('select');
+  for (const [v, t] of [['off', 'Web pages: off'], ['links', 'Web pages: only links it\'s given'], ['free', 'Web pages: any address (kept from private things)']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; web.append(o); }
+  web.value = !a.web ? 'off' : a.webFree ? 'free' : 'links';
+  const webL = field('WEB PAGES', web);
   const depot = document.createElement('input'); depot.type = 'checkbox'; depot.checked = !!a.depot;
   const depotL = el('label', 'check'); depotL.append(depot, document.createTextNode(' Can see and add to your shopping list'));
   access.append(field('ARCHIVE', ar), webL, depotL, el('p', 'fine', 'Access changes from here wait for your OK on the Mac. An agent that reads web pages can\'t also use the shopping list.'));
   const arow = el('div', 'row');
-  arow.append(btn('ASK THE MAC', () => sendCommand('access', { id: a.id, archive: ar.value, web: web.checked, depot: depot.checked }, 'Access change for ' + a.name)));
+  arow.append(btn('ASK THE MAC', () => sendCommand('access', { id: a.id, archive: ar.value, web: web.value !== 'off', webFree: web.value === 'free', depot: depot.checked }, 'Access change for ' + a.name)));
   access.append(arow);
   card.append(access);
 
