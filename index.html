@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-16EsPQrkrivtl552ucQiQGwAn7FsBMRV+WUceNO3bIY='; style-src 'sha256-/1TtdK9scqrwahhDdJuN2gMvHB4S5ls+T3O7PvnLrwI='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2Xhgq6HI+A1bYnO3/AsGG5GqE5C0kjIlUz1L8UF3Zyw='; style-src 'sha256-xz8+lewqoh2COcJgW6yhuTEzyiEy3pPzP6NPZsXwxCs='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -221,6 +221,20 @@ button.mini { padding: 5px 10px; box-shadow: none; }
 .badge { font-size: 10px; letter-spacing: 1px; padding: 2px 6px; border: 2px solid var(--edge); color: var(--quiet); vertical-align: middle; }
 .badge.ok { border-color: #24524a; color: var(--green); }
 .badge.err { border-color: #6b2632; color: var(--red); }
+
+/* Inbox: results from Agent Station's scheduled jobs */
+.inbox { list-style: none; margin: 0; padding: 0; }
+.inbox li + li { margin-top: 4px; }
+.inbox li { border: 2px solid var(--edge); background: #0f1024; padding: 6px 8px; }
+.inbox .ib-head { display: flex; gap: 8px; align-items: flex-start; }
+.inbox .ib-open { display: block; flex: 1; min-width: 0; width: auto; text-align: left; background: none; border: 0; box-shadow: none; padding: 0; color: var(--ink); font: inherit; cursor: pointer; }
+.inbox .ib-open:active { transform: none; }
+.inbox .ib-title { display: block; font-size: 13px; overflow-wrap: anywhere; }
+.inbox li.unread .ib-title::before { content: "\25CF  "; color: var(--orange); }
+.inbox li.failed .ib-title { color: #ffb3bc; }
+.inbox .ib-meta { display: block; color: var(--quiet); font-size: 11px; }
+.inbox .ib-hide { padding: 3px 8px; font-size: 10px; }
+.inbox .ib-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--edge); max-height: 60vh; overflow-y: auto; }
 </style>
 </head>
 <body>
@@ -398,6 +412,16 @@ button.mini { padding: 5px 10px; box-shadow: none; }
       </div>
     </section>
 
+    <section class="panel" id="inbox-panel" hidden>
+      <div class="fold-head">
+        <button type="button" class="fold-toggle" id="inbox-toggle" aria-expanded="true" aria-controls="inbox-body"><span class="chev" aria-hidden="true">v</span>INBOX <span class="count" id="inbox-count">0</span></button>
+      </div>
+      <div id="inbox-body">
+        <ul class="inbox" id="inbox-list"></ul>
+        <p class="fine">Results from your agents' scheduled jobs, sent encrypted from Agent Station on your Mac. HIDE only hides one on this device.</p>
+      </div>
+    </section>
+
     <section class="panel lost" id="lost-panel" hidden>
       <h2>BEYOND THE HORIZON <span class="count" id="lost-count">0</span></h2>
       <ul class="list" id="lost-list"></ul>
@@ -466,7 +490,7 @@ button.mini { padding: 5px 10px; box-shadow: none; }
             <button type="button" id="import-no">CANCEL</button>
           </div>
         </div>
-        <p class="fine">Pull = 85% deadline + 15% neglect (7 days). A task reaches the center at its deadline. Tasks are saved only in this browser on this device. The page talks to nothing on the internet except ntfy.sh, and only if phone alerts are on.</p>
+        <p class="fine">Pull = 85% deadline + 15% neglect (7 days). A task reaches the center at its deadline. Tasks are saved in this browser on this device. The page talks to only two places on the internet: ntfy.sh if phone alerts are on, and api.github.com if sync is on.</p>
       </details>
     </section>
   </aside>
@@ -2157,8 +2181,8 @@ async function seal(obj) {
   const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: AAD }, syncKey, te.encode(JSON.stringify(obj)));
   return { iv: toB64(iv), data: toB64(ct) };
 }
-async function unseal(file, key) {
-  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(file.iv), additionalData: AAD }, key || syncKey, fromB64(file.data));
+async function unseal(file, key, aad) {
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(file.iv), additionalData: aad || AAD }, key || syncKey, fromB64(file.data));
   return JSON.parse(td.decode(pt));
 }
 
@@ -2167,7 +2191,16 @@ function ghHeaders(token) {
   return { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
 }
 async function ghRead(cfg) {
-  const res = await fetch(GH + '/repos/' + cfg.repo + '/contents/' + SYNC_PATH, {
+  const r = await ghReadPath(cfg, SYNC_PATH);
+  if (!r) return null;
+  const file = r.file;
+  if (!file || file.format !== 'blackhole-sync' || typeof file.salt !== 'string' || typeof file.iv !== 'string' || typeof file.data !== 'string') {
+    throw new Error('The sync file on GitHub isn\'t one of ours.');
+  }
+  return r;
+}
+async function ghReadPath(cfg, path) {
+  const res = await fetch(GH + '/repos/' + cfg.repo + '/contents/' + path, {
     headers: ghHeaders(cfg.token), cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer',
   });
   if (res.status === 404) return null;
@@ -2177,10 +2210,7 @@ async function ghRead(cfg) {
   const j = await res.json();
   if (!j || typeof j.content !== 'string' || typeof j.sha !== 'string') throw new Error('The sync file on GitHub looks wrong.');
   let file;
-  try { file = JSON.parse(td.decode(fromB64(j.content))); } catch (e) { throw new Error('The sync file on GitHub is damaged.'); }
-  if (!file || file.format !== 'blackhole-sync' || typeof file.salt !== 'string' || typeof file.iv !== 'string' || typeof file.data !== 'string') {
-    throw new Error('The sync file on GitHub isn\'t one of ours.');
-  }
+  try { file = JSON.parse(td.decode(fromB64(j.content))); } catch (e) { throw new Error('The file ' + path + ' on GitHub is damaged.'); }
   return { sha: j.sha, file };
 }
 // Returns false on a write conflict (someone else saved first).
@@ -2297,6 +2327,7 @@ async function syncNow() {
       }
       lastSyncAt = Date.now();
       syncError = '';
+      pullInbox();
       break;
     }
   } catch (e) {
@@ -2313,6 +2344,121 @@ function queueSync() {
   clearTimeout(syncTimer);
   syncTimer = setTimeout(syncNow, 2500);
 }
+
+// ---------------------------------------------------------------- inbox (results from Agent Station)
+// Agent Station on the Mac runs scheduled jobs and writes their results,
+// encrypted with the same key as your sync, to blackhole-inbox.json in the
+// same private repo. This reads that file; nothing here can change it.
+// Which results you've opened or hidden is remembered on this device only.
+const INBOX_PATH = 'blackhole-inbox.json';
+const INBOX_AAD = new TextEncoder().encode('blackhole-inbox-v1');
+const INBOX_CACHE = 'blackhole.inbox.v1';
+const inboxState = (() => {
+  try {
+    const x = JSON.parse(localStorage.getItem(INBOX_CACHE) || 'null');
+    if (x && Array.isArray(x.items)) return { items: x.items, read: new Set(x.read || []), hidden: new Set(x.hidden || []) };
+  } catch (e) { /* ignore */ }
+  return { items: [], read: new Set(), hidden: new Set() };
+})();
+const inboxOpen = new Set();
+let inboxBusy = false;
+
+function saveInbox() {
+  const keep = new Set(inboxState.items.map((i) => i.id));
+  const ids = (set) => [...set].filter((id) => keep.has(id)).slice(-300);
+  try {
+    localStorage.setItem(INBOX_CACHE, JSON.stringify({ items: inboxState.items, read: ids(inboxState.read), hidden: ids(inboxState.hidden) }));
+  } catch (e) { /* storage full: still works for this visit */ }
+}
+
+/** Keeps only well-formed results, as plain strings and numbers. */
+function cleanInbox(payload) {
+  const list = payload && Array.isArray(payload.items) ? payload.items : [];
+  const out = [];
+  for (const x of list.slice(0, 50)) {
+    if (!x || typeof x.id !== 'string' || !/^[A-Za-z0-9-]{1,64}$/.test(x.id)) continue;
+    out.push({
+      id: x.id,
+      at: Number.isFinite(x.at) ? x.at : 0,
+      job: String(x.job || 'Result').slice(0, 80),
+      agents: Array.isArray(x.agents) ? x.agents.slice(0, 12).map((a) => String(a).slice(0, 40)) : [],
+      text: String(x.text || '').slice(0, 50000),
+      failed: x.failed === true,
+    });
+  }
+  return out;
+}
+
+async function pullInbox() {
+  if (!syncCfg || !syncKey || inboxBusy) return;
+  inboxBusy = true;
+  try {
+    const r = await ghReadPath(syncCfg, INBOX_PATH);
+    if (!r) { inboxState.items = []; }
+    else {
+      const f = r.file;
+      if (!f || f.format !== 'blackhole-inbox' || f.salt !== syncCfg.salt || typeof f.iv !== 'string' || typeof f.data !== 'string') return;
+      inboxState.items = cleanInbox(await unseal(f, syncKey, INBOX_AAD));
+    }
+    saveInbox();
+    renderInbox();
+  } catch (e) {
+    /* leave the last copy showing; the next sync tries again */
+  } finally {
+    inboxBusy = false;
+  }
+}
+
+function renderInbox() {
+  const items = inboxState.items.filter((i) => !inboxState.hidden.has(i.id));
+  const panel = $('#inbox-panel');
+  panel.hidden = !items.length;
+  const unread = items.filter((i) => !inboxState.read.has(i.id)).length;
+  $('#inbox-count').textContent = unread ? unread + ' NEW' : String(items.length);
+  const ul = $('#inbox-list');
+  ul.textContent = '';
+  for (const it of items) {
+    const li = document.createElement('li');
+    li.className = (inboxState.read.has(it.id) ? '' : 'unread') + (it.failed ? ' failed' : '');
+    const head = document.createElement('div'); head.className = 'ib-head';
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'ib-open';
+    open.setAttribute('aria-expanded', String(inboxOpen.has(it.id)));
+    const t = document.createElement('span'); t.className = 'ib-title'; t.textContent = it.job;
+    const m = document.createElement('span'); m.className = 'ib-meta';
+    m.textContent = it.agents.join(' → ') + (it.at ? ' · ' + new Date(it.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
+    open.append(t, m);
+    open.addEventListener('click', () => {
+      if (inboxOpen.has(it.id)) inboxOpen.delete(it.id); else inboxOpen.add(it.id);
+      inboxState.read.add(it.id);
+      saveInbox();
+      renderInbox();
+    });
+    const hide = document.createElement('button');
+    hide.type = 'button';
+    hide.className = 'ib-hide';
+    hide.textContent = 'HIDE';
+    hide.setAttribute('aria-label', 'Hide ' + it.job + ' on this device');
+    hide.addEventListener('click', () => armThen(hide, 'SURE?', () => {
+      inboxState.hidden.add(it.id);
+      inboxState.read.add(it.id);
+      saveInbox();
+      renderInbox();
+    }));
+    head.append(open, hide);
+    li.append(head);
+    if (inboxOpen.has(it.id)) {
+      const body = document.createElement('div');
+      body.className = 'ib-text';
+      body.textContent = it.text; // always plain text, never HTML
+      li.append(body);
+    }
+    ul.append(li);
+  }
+}
+setupFold('#inbox-toggle', '#inbox-body', 'inbox');
+renderInbox();
 
 // -- settings UI
 function setSyncStatus(text, kind) { setMsg($('#sy-status'), text, kind); }
@@ -2418,6 +2564,12 @@ $('#sy-off').addEventListener('click', () => armThen($('#sy-off'), 'TAP AGAIN TO
   syncError = '';
   try { localStorage.removeItem(SYNC_KEY); } catch (e) { /* ignore */ }
   await keyStore('delete');
+  // The inbox came from the synced repo, so it goes too.
+  inboxState.items = [];
+  inboxState.read.clear();
+  inboxState.hidden.clear();
+  try { localStorage.removeItem(INBOX_CACHE); } catch (e) { /* ignore */ }
+  renderInbox();
   renderSync();
   toast('This device stopped syncing. Your lists stay here, and the copy on GitHub is untouched.', true);
 }));
