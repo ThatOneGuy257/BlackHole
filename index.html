@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tXQgYexiIoHd0P6m/eHmNACrdNf3bkbY+a9Q0+QrIr8='; style-src 'sha256-xQKGXvLbu8G1d6J/ocB7EH21QfaPm/cfp3zqzvIerio='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fBePBOqbc0PNHd6egg1Qg43JrCVNnuAInbbud4MTwcY='; style-src 'sha256-vpwqS8QZgfXTdHZFbd9LZ6tUtBFzs1Yub7qjstFWdPQ='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -321,6 +321,40 @@ button.mini { padding: 5px 10px; box-shadow: none; }
   #away.sr-out .sr-paper { transition: none; transform: none; }
 }
 
+/* The pop-out menu (wide windows only): a rail of tabs on the right; each tab
+   slides out a panel over the scene with just its own sections. */
+.rail, .rail-head { display: none; }
+@media (min-width: 821px) {
+  body.railed main { grid-template-columns: 1fr 76px; }
+  body.railed .rail {
+    display: flex; flex-direction: column; gap: 6px; grid-column: 2; grid-row: 1;
+    padding: 12px 8px; background: var(--bg); border-left: 2px solid var(--edge); overflow-y: auto;
+  }
+  .rail-tab { width: 100%; padding: 10px 2px; font-size: 10px; letter-spacing: 1px; box-shadow: none; }
+  .rail-tab.on { background: #3a2410; border-color: var(--orange); color: #ffd9b0; }
+  body.railed aside {
+    position: absolute; top: 0; bottom: 0; right: 76px; z-index: 20;
+    width: var(--side, 380px); max-width: calc(100% - 140px);
+    background: var(--bg); border-left: 2px solid var(--edge); box-shadow: -14px 0 30px rgba(0, 0, 0, .55);
+    transform: translateX(calc(100% + 90px)); visibility: hidden;
+    transition: transform .18s ease-out, visibility 0s linear .18s;
+  }
+  body.railed aside.out { transform: none; visibility: visible; transition: transform .18s ease-out; }
+  body.railed aside [data-tab].off { display: none !important; }
+  body.railed .rail-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 2px; color: var(--orange); font-weight: bold; padding: 0 2px;
+  }
+  body.railed .side-grip { right: calc(76px + var(--side, 380px) - 5px); z-index: 21; }
+  body.railed:not(.rail-open) .side-grip { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.railed aside, body.railed aside.out { transition: none; }
+}
+.tm-len { margin-top: 4px; }
+.tm-presets { margin: 0 0 8px; }
+.tm-presets button { flex: 0 0 auto; }
+
 /* Looks. HUD (below) is the default; "classic" is the original pixel look
    from style.css, chosen with <html data-theme="classic">. Looks change only
    the panels and controls around the two pixel scenes, never the scenes. */
@@ -473,6 +507,13 @@ html:not([data-theme=classic]) .sub { color: var(--quiet); }
 /* The Black Hole's fold arrows: a pixel triangle instead of the letter "v". */
 html:not([data-theme=classic]) .fold-toggle .chev { font-size: 0; width: 12px; text-align: center; }
 html:not([data-theme=classic]) .fold-toggle .chev::before { content: "\25BE"; font-size: 13px; }
+
+/* The pop-out menu in the HUD look. */
+html:not([data-theme=classic]) body.railed .rail { border-left: 0; background: var(--bg); box-shadow: inset 2px 0 0 var(--edge); }
+html:not([data-theme=classic]) .rail-tab { clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+html:not([data-theme=classic]) .rail-tab.on { background: var(--orange); border-color: var(--orange); color: #1c0d00; }
+html:not([data-theme=classic]) body.railed aside { background: rgba(3, 6, 13, .97); border-left: 0; box-shadow: inset 2px 0 0 var(--edge), -18px 0 40px rgba(0, 0, 0, .6); }
+html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); text-shadow: 0 0 8px rgba(255, 169, 77, .45); padding-bottom: 6px; border-bottom: 1px dashed var(--edge); }
 </style>
 </head>
 <body>
@@ -630,6 +671,15 @@ html:not([data-theme=classic]) .fold-toggle .chev::before { content: "\25BE"; fo
           <span class="t-time" id="tm-time" role="timer" aria-live="off">25:00</span>
           <span class="t-round" id="tm-round"></span>
         </div>
+        <div class="grid2 tm-len">
+          <label>SESSION (MIN)<input id="tm-work" type="number" min="1" max="180" inputmode="numeric"></label>
+          <label>BREAK (MIN)<input id="tm-short" type="number" min="1" max="60" inputmode="numeric"></label>
+        </div>
+        <div class="row tm-presets" role="group" aria-label="Quick lengths">
+          <button type="button" class="mini" data-len="25,5">25 / 5</button>
+          <button type="button" class="mini" data-len="50,10">50 / 10</button>
+          <button type="button" class="mini" data-len="90,20">90 / 20</button>
+        </div>
         <label>WORKING ON <em>(optional, gets a check-in per session)</em><select id="tm-task"></select></label>
         <div class="row">
           <button type="button" class="primary" id="tm-start">LAUNCH ASTRONAUT</button>
@@ -638,13 +688,15 @@ html:not([data-theme=classic]) .fold-toggle .chev::before { content: "\25BE"; fo
           <button type="button" class="danger" id="tm-stop">STOP</button>
         </div>
         <details class="lengths">
-          <summary>LENGTHS</summary>
+          <summary>MORE TIMER SETTINGS</summary>
           <div class="grid2">
-            <label>WORK (MIN)<input id="tm-work" type="number" min="1" max="180" inputmode="numeric"></label>
-            <label>BREAK (MIN)<input id="tm-short" type="number" min="1" max="60" inputmode="numeric"></label>
             <label>LONG BREAK (MIN)<input id="tm-long" type="number" min="1" max="120" inputmode="numeric"></label>
             <label>LONG BREAK EVERY<input id="tm-every" type="number" min="1" max="12" inputmode="numeric"></label>
           </div>
+          <label class="check"><input type="checkbox" id="tm-sound"> Play a sound when a session or break ends</label>
+          <label class="check"><input type="checkbox" id="tm-notify"> Send a notification when a session or break ends</label>
+          <div class="row"><button type="button" id="tm-test">TEST THE ALERT</button></div>
+          <p class="msg" id="tm-msg" hidden></p>
         </details>
       </div>
     </section>
@@ -791,6 +843,7 @@ html:not([data-theme=classic]) .fold-toggle .chev::before { content: "\25BE"; fo
 </main>
 <script>(() => {
 'use strict';
+/** The pop-out menu, on wide windows (see rail.js). @type {any} */ let railApi = null;
 
 // ---------------------------------------------------------------- settings
 const NEGLECT_DAYS = 7;     // a task with no deadline crosses this long after its last check-in
@@ -1375,6 +1428,7 @@ function select(type, id) {
   if (sel) {
     const panel = sel.type === 'task' ? $('#detail') : $('#gdetail');
     panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (railApi) railApi.open('tasks');
   }
   if (sel && sel.type === 'group') zoomTo(sel.id);
   if (closingGroup) zoomOut();
@@ -2125,12 +2179,50 @@ function beepUp() {
     });
   } catch (e) { /* sound is optional */ }
 }
+// How the timer tells you a phase ended: a sound and/or a notification
+// (on the Mac, a real Mac notification with its own sound). Per device.
+const TM_ALERT_KEY = 'blackhole.timer.alerts';
+function tmAlerts() {
+  try { const v = JSON.parse(localStorage.getItem(TM_ALERT_KEY) || 'null'); if (v && typeof v === 'object') return { sound: v.sound !== false, notify: v.notify !== false }; } catch (e) { /* default */ }
+  return { sound: true, notify: true };
+}
+function saveTmAlerts(a) { try { localStorage.setItem(TM_ALERT_KEY, JSON.stringify(a)); } catch (e) { /* this time only */ } }
+/** A clear four-note chime, louder than the other beeps. */
+function chime() {
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+  try {
+    audio = audio || new AudioContext();
+    if (audio.state === 'suspended') audio.resume();
+    const t0 = audio.currentTime;
+    [784, 988, 1175, 1568].forEach((f, i) => {
+      const o = audio.createOscillator(), g = audio.createGain(), at = t0 + i * 0.18;
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(f, at);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.22, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, at + 0.5);
+      o.connect(g).connect(audio.destination);
+      o.start(at); o.stop(at + 0.55);
+    });
+  } catch (e) { /* sound is optional */ }
+}
+/** @param {string} text @returns {Promise<boolean>} whether a notification went out */
+async function sendNotification(text) {
+  if (IN_APP) {
+    try { await window.__TAURI__.core.invoke('notify', { title: 'Focus timer', body: text }); return true; } catch (e) { return false; }
+  }
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('Focus timer', { body: text }); return true; } catch (e) { return false; }
+  }
+  return false;
+}
 function timerAlert(text) {
   toast(text, true);
-  beepUp();
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try { new Notification('Focus timer', { body: text }); } catch (e) { /* ignore */ }
-  }
+  const a = tmAlerts();
+  // In the app the Mac notification brings its own sound; the chime covers
+  // the rest (and the app when notifications are off).
+  if (a.notify) sendNotification(text).then((sent) => { if (a.sound && !(sent && IN_APP)) chime(); });
+  else if (a.sound) chime();
 }
 
 // Ends the current phase at time `when`; returns the phase that comes next.
@@ -2241,6 +2333,38 @@ $('#tm-skip').addEventListener('click', () => {
   startPhase(next, Date.now());
 });
 $('#tm-stop').addEventListener('click', stopTimer);
+for (const b of document.querySelectorAll('.tm-presets button')) {
+  b.addEventListener('click', () => {
+    const [w, br] = String(b.dataset.len).split(',').map(Number);
+    timer.len.work = w;
+    timer.len.short = br;
+    timerChanged(); // a running phase keeps its end; the next ones use these
+    toast('Sessions ' + w + ' min, breaks ' + br + ' min.', true);
+  });
+}
+{
+  const a = tmAlerts();
+  $('#tm-sound').checked = a.sound;
+  $('#tm-notify').checked = a.notify;
+}
+$('#tm-sound').addEventListener('change', () => { const a = tmAlerts(); a.sound = $('#tm-sound').checked; saveTmAlerts(a); if (a.sound) chime(); });
+$('#tm-notify').addEventListener('change', async () => {
+  const a = tmAlerts();
+  a.notify = $('#tm-notify').checked;
+  saveTmAlerts(a);
+  if (a.notify && !IN_APP && 'Notification' in window && Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (e) { /* the browser said no */ }
+  }
+  if (a.notify && !IN_APP && (!('Notification' in window) || Notification.permission !== 'granted')) {
+    setMsg($('#tm-msg'), "This browser won't show notifications here. On a phone, use PHONE ALERTS (NTFY) under MORE instead.", 'err');
+  } else setMsg($('#tm-msg'), '');
+});
+$('#tm-test').addEventListener('click', async () => {
+  const a = tmAlerts();
+  if (a.sound) chime();
+  const sent = a.notify ? await sendNotification('This is what you will see when a session ends.') : false;
+  setMsg($('#tm-msg'), a.notify && !sent ? "The notification couldn't be shown. " + (IN_APP ? 'Check that notifications are allowed for Script Editor in System Settings > Notifications.' : 'Allow notifications for this page in your browser.') : 'Sent.', a.notify && !sent ? 'err' : 'ok');
+});
 $('#tm-quick').addEventListener('click', () => (timerRunning() ? $('#tm-pause') : $('#tm-start')).click());
 $('#tm-task').addEventListener('change', (e) => {
   timer.taskId = validId(e.target.value);
@@ -4526,6 +4650,21 @@ renderTimer();
 armWake();
 setInterval(() => { sweep(false); renderLists(); updateStats(); updateGroupStats(); timerTick(); renderTimer(); }, 1000);
 requestAnimationFrame(frame);
+
+// The pop-out menu on wide windows (see rail.js).
+const sectionOf = (/** @type {string} */ sel) => { const el = document.querySelector(sel); return el ? el.closest('aside > *') : null; };
+railApi = makeRail({
+  key: 'blackhole.rail',
+  fallback: 'tasks',
+  tabs: [
+    { id: 'tasks', label: 'TASKS', always: true, parts: [$('.actions'), sectionOf('#orbit-list'), $('#lost-panel'), sectionOf('#done-list')], auto: [$('#detail'), $('#gdetail'), $('#new-task-panel'), $('#new-group-panel')] },
+    { id: 'timer', label: 'TIMER', always: true, parts: [$('#timer-panel')] },
+    { id: 'list', label: 'LIST', parts: [], auto: [$('#shop-panel')], open: () => { if ($('#shop-panel').hidden) openShop(); } },
+    { id: 'inbox', label: 'INBOX', parts: [$('#inbox-panel')] },
+    { id: 'agents', label: 'AGENTS', parts: [$('#station-panel')] },
+    { id: 'more', label: 'MORE', always: true, parts: [sectionOf('#more-box')], open: () => { $('#more-box').open = true; } },
+  ],
+});
 })();
 
 // ---------------------------------------------------------------- wider side panel
@@ -4559,13 +4698,14 @@ requestAnimationFrame(frame);
     e.preventDefault();
     grip.setPointerCapture(e.pointerId);
     grip.classList.add('drag');
-    const move = (ev) => set(window.innerWidth - ev.clientX, false);
+    const railW = () => (document.body.classList.contains('railed') ? 76 : 0);
+    const move = (ev) => set(window.innerWidth - railW() - ev.clientX, false);
     const up = (ev) => {
       grip.classList.remove('drag');
       grip.removeEventListener('pointermove', move);
       grip.removeEventListener('pointerup', up);
       grip.removeEventListener('pointercancel', up);
-      set(window.innerWidth - ev.clientX, true);
+      set(window.innerWidth - railW() - ev.clientX, true);
     };
     grip.addEventListener('pointermove', move);
     grip.addEventListener('pointerup', up);
@@ -4729,6 +4869,107 @@ requestAnimationFrame(frame);
   if (document.hasFocus()) setTimeout(ping, 800);
   window.__showShiftReport = show; // for tests only; the core decides when
 })();
+
+// @ts-check
+// The pop-out menu for wide windows (the Mac app, or a laptop browser): a rail
+// of tabs down the right edge; each tab slides out a panel with only its own
+// sections, so nothing has to be scrolled past. Phones keep the long list.
+/**
+ * @param {{ key: string, tabs: { id: string, label: string, parts: (Element|null)[], auto?: (Element|null)[], open?: () => void, always?: boolean }[], fallback: string }} cfg
+ */
+// eslint-disable-next-line no-unused-vars
+function makeRail(cfg) {
+  const aside = document.querySelector('aside');
+  const main = document.querySelector('main');
+  if (!aside || !main) return null;
+  const wide = window.matchMedia('(min-width: 821px)');
+  const rail = document.createElement('nav');
+  rail.className = 'rail';
+  rail.setAttribute('aria-label', 'Menu');
+  main.append(rail);
+  // A header inside the pop-out: which tab, and a way to close it.
+  const head = document.createElement('div');
+  head.className = 'rail-head';
+  const title = document.createElement('span');
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'close';
+  close.textContent = '»';
+  close.title = 'Close the menu';
+  close.setAttribute('aria-label', 'Close the menu');
+  head.append(title, close);
+  aside.prepend(head);
+
+  /** @type {Map<string, HTMLButtonElement>} */
+  const buttons = new Map();
+  for (const t of cfg.tabs) {
+    for (const el of [...t.parts, ...(t.auto || [])]) if (el instanceof HTMLElement) el.dataset.tab = t.id;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rail-tab';
+    b.textContent = t.label;
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => {
+      if (isOpen && current === t.id) { isOpen = false; apply(); return; }
+      current = t.id;
+      isOpen = true;
+      remember();
+      apply();
+      if (t.open) t.open();
+    });
+    rail.append(b);
+    buttons.set(t.id, b);
+  }
+  let current = cfg.fallback;
+  let isOpen = false;
+  try { const saved = localStorage.getItem(cfg.key); if (saved && cfg.tabs.some((t) => t.id === saved)) current = saved; } catch (e) { /* default */ }
+  const remember = () => { try { localStorage.setItem(cfg.key, current); } catch (e) { /* fine */ } };
+  /** A tab shows when it can always be opened, or something of its is showing. @param {typeof cfg.tabs[number]} t */
+  const available = (t) => !!(t.open || t.always) || [...t.parts, ...(t.auto || [])].some((el) => el instanceof HTMLElement && !el.hidden);
+
+  function apply() {
+    const on = wide.matches;
+    document.body.classList.toggle('railed', on);
+    if (!on) {
+      aside.classList.remove('out');
+      document.body.classList.remove('rail-open');
+      return;
+    }
+    const tab = cfg.tabs.find((t) => t.id === current) || cfg.tabs[0];
+    if (!available(tab)) current = cfg.fallback;
+    aside.classList.toggle('out', isOpen);
+    document.body.classList.toggle('rail-open', isOpen);
+    for (const el of aside.querySelectorAll('[data-tab]')) el.classList.toggle('off', /** @type {HTMLElement} */ (el).dataset.tab !== current);
+    for (const t of cfg.tabs) {
+      const b = /** @type {HTMLButtonElement} */ (buttons.get(t.id));
+      b.hidden = !available(t);
+      b.setAttribute('aria-pressed', String(isOpen && t.id === current));
+      b.classList.toggle('on', isOpen && t.id === current);
+    }
+    title.textContent = (cfg.tabs.find((t) => t.id === current) || cfg.tabs[0]).label;
+  }
+  close.addEventListener('click', () => { isOpen = false; apply(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen && wide.matches && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) { isOpen = false; apply(); }
+  });
+  // Something you opened elsewhere (a planet, a desk, the filing cabinet)
+  // brings its tab out; when it closes, the tab goes back to the default.
+  const watched = cfg.tabs.flatMap((t) => (t.auto || []).map((el) => ({ el, t })));
+  new MutationObserver((list) => {
+    for (const m of list) {
+      const hit = watched.find((w) => w.el === m.target);
+      if (!hit || !(hit.el instanceof HTMLElement)) continue;
+      const was = m.oldValue !== null; // hidden before?
+      if (was === hit.el.hidden) continue; // set again to the same: nothing changed
+      if (!hit.el.hidden) { current = hit.t.id; isOpen = true; }
+      else if (current === hit.t.id && !available(hit.t)) { current = cfg.fallback; }
+    }
+    apply();
+  }).observe(aside, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
+  wide.addEventListener('change', apply);
+  apply();
+  return { open: (/** @type {string} */ id) => { current = id; isOpen = true; apply(); }, close: () => { isOpen = false; apply(); } };
+}
 </script>
 </body>
 </html>
