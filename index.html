@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mC8etfwvrKeCh+dEEs82DCoUDWRSQVJ66HHHuOJNPgo='; style-src 'sha256-lDv/W/QFoJKDov5CEmllEp1VicdM+BvIwSPrhBnOc34='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fxJFWDnFLxWp9lqOYQ2VY93++uRp+KdYUR9hoA0gCpY='; style-src 'sha256-BKKwsEn1N3olbFF6XOfpBIzorCQPYZfFEtq2ShN1+XY='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -48,6 +48,14 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 360px; 
 .space-wrap { position: relative; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #05040b; }
 #space { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
 aside { overflow-y: auto; padding: 12px; border-left: 2px solid var(--edge); display: flex; flex-direction: column; gap: 12px; }
+
+/* The side panel can be dragged wider (the grip on its left edge). */
+main { position: relative; grid-template-columns: 1fr var(--side, 360px); }
+.side-grip { position: absolute; top: 0; bottom: 0; right: calc(var(--side, 360px) - 5px); width: 10px; cursor: col-resize; z-index: 5; touch-action: none; }
+.side-grip::after { content: ""; position: absolute; top: 50%; left: 3px; width: 4px; height: 36px; margin-top: -18px; background: var(--edge); }
+.side-grip:hover::after, .side-grip.drag::after, .side-grip:focus-visible::after { background: #ffb347; }
+.side-grip:focus-visible { outline: none; }
+@media (max-width: 820px) { .side-grip { display: none; } }
 
 .panel { background: var(--panel); border: 2px solid var(--edge); box-shadow: 4px 4px 0 #000; padding: 10px 12px; }
 .panel h2, summary { margin: 0 0 8px; font-size: 12px; letter-spacing: 2px; color: var(--cyan); font-weight: bold; }
@@ -253,6 +261,65 @@ button.mini { padding: 5px 10px; box-shadow: none; }
 #st-queue li { font-size: 12px; }
 #st-queue li.ok { color: var(--green); }
 #st-queue li.err { color: #ffb3bc; }
+
+/* "While you were away": the front desk prints a shift report. */
+#away {
+  --sr-night: #0a0b1e; --sr-paper: #e6e9f0; --sr-ink: #23265c; --sr-faint: #6d72a8; --sr-led: #ffb347; --sr-fault: #c43a4a;
+  position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; align-items: flex-start;
+  overflow-y: auto; padding: 28px 16px 40px; background: rgba(10, 11, 30, 0.86);
+}
+#away .sr-stage { width: min(400px, 100%); display: flex; flex-direction: column; align-items: center; }
+#away .sr-printer { position: relative; z-index: 2; width: calc(100% + 28px); height: 22px; background: #2b2f55; border: 2px solid #3c4170; box-shadow: 0 4px 0 #000; }
+#away .sr-slot { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 4px; background: #05060f; }
+#away .sr-led { position: absolute; right: 8px; top: 4px; width: 6px; height: 4px; background: var(--sr-led); box-shadow: 0 0 6px var(--sr-led); }
+#away.sr-in .sr-led { animation: sr-blink 0.25s steps(1) 7; }
+@keyframes sr-blink { 50% { opacity: 0.15; } }
+#away .sr-paper {
+  position: relative; width: 100%; padding: 22px 22px 30px;
+  background: var(--sr-paper); color: var(--sr-ink); font: 13px/1.55 var(--font);
+  /* a torn bottom edge */
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), 95% 100%, 90% calc(100% - 8px), 85% 100%, 80% calc(100% - 8px), 75% 100%, 70% calc(100% - 8px), 65% 100%, 60% calc(100% - 8px), 55% 100%, 50% calc(100% - 8px), 45% 100%, 40% calc(100% - 8px), 35% 100%, 30% calc(100% - 8px), 25% 100%, 20% calc(100% - 8px), 15% 100%, 10% calc(100% - 8px), 5% 100%, 0 calc(100% - 8px));
+  background-image: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(35, 38, 92, 0.035) 3px 4px);
+}
+/* The one moment: the paper feeds out of the slot in steps, first line first. */
+#away .sr-feedwin { width: 100%; margin-top: -6px; overflow: hidden; }
+#away.sr-in .sr-paper { animation: sr-feed 1.6s steps(var(--steps, 24), end) both; }
+@keyframes sr-feed { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+#away .sr-title { display: block; image-rendering: pixelated; margin: 0 0 10px; }
+#away .sr-sub { margin: 0; font-size: 12px; color: var(--sr-faint); }
+#away .sr-when { margin: 6px 0 0; font-size: 22px; font-weight: bold; letter-spacing: -0.5px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+#away .sr-arrow { color: var(--sr-faint); font-weight: normal; }
+#away .sr-span { margin: 2px 0 0; color: var(--sr-faint); }
+#away .sr-rule { border: 0; border-top: 2px dashed rgba(35, 38, 92, 0.35); margin: 14px 0; }
+#away .sr-tally { margin: 0 0 12px; }
+#away .sr-row { display: flex; align-items: baseline; gap: 6px; }
+#away .sr-row dt { margin: 0; }
+#away .sr-row dd { margin: 0; font-weight: bold; min-width: 2ch; text-align: right; }
+#away .sr-dots { flex: 1; border-bottom: 2px dotted rgba(35, 38, 92, 0.35); transform: translateY(-4px); }
+#away .sr-row.sr-bad { color: var(--sr-fault); }
+#away .sr-note { margin: 0 0 10px; }
+#away .sr-sec { margin: 16px 0 0; }
+#away .sr-sec h3 { margin: 0 0 6px; font-size: 13px; padding-bottom: 3px; border-bottom: 2px solid var(--sr-ink); }
+#away .sr-sec ul { list-style: none; margin: 0; padding: 0; }
+#away .sr-sec li { display: grid; grid-template-columns: 8px 1fr; gap: 8px; align-items: start; padding: 3px 0; overflow-wrap: anywhere; }
+#away .sr-dot { width: 6px; height: 6px; margin-top: 7px; background: var(--sr-ink); }
+#away .sr-problems li { color: var(--sr-fault); }
+#away .sr-problems .sr-dot { background: var(--sr-fault); }
+#away .sr-floor li span { font-style: italic; }
+#away .sr-floor .sr-dot { border-radius: 50%; }
+#away .sr-foot { margin-top: 22px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#away .sr-code { display: flex; gap: 2px; height: 26px; }
+#away .sr-code i { display: block; height: 100%; background: var(--sr-ink); }
+#away .sr-printed { margin: 0; font-size: 11px; color: var(--sr-faint); }
+#away .sr-done { margin-top: 18px; min-width: 120px; }
+#away.sr-in .sr-done { animation: sr-show 0.2s 1.6s both; }
+@keyframes sr-show { from { opacity: 0; } }
+#away.sr-out { transition: opacity 0.35s; opacity: 0; }
+#away.sr-out .sr-paper { transition: transform 0.35s ease-in; transform: translateY(-30px); }
+@media (prefers-reduced-motion: reduce) {
+  #away.sr-in .sr-paper, #away.sr-in .sr-led, #away.sr-in .sr-done { animation: none; }
+  #away.sr-out .sr-paper { transition: none; transform: none; }
+}
 </style>
 </head>
 <body>
@@ -475,6 +542,7 @@ button.mini { padding: 5px 10px; box-shadow: none; }
             <label>TIME<input id="st-j-time" type="time" value="07:00"></label>
             <p class="sub">DAYS</p>
             <div class="st-days" id="st-j-days"></div>
+            <label class="check"><input type="checkbox" id="st-j-ahead"> Make it ahead, deliver at this time (arrives even if your Mac is asleep then)</label>
             <div class="row"><button type="button" class="primary" id="st-j-add">ADD JOB</button></div>
           </details>
         </details>
@@ -2489,6 +2557,7 @@ function cleanInbox(payload) {
       text: String(x.text || '').slice(0, 50000),
       failed: x.failed === true,
       taskId: typeof x.taskId === 'string' && /^[A-Za-z0-9-]{1,64}$/.test(x.taskId) ? x.taskId : '',
+      deliverAt: Number.isFinite(x.deliverAt) && x.deliverAt > 0 ? x.deliverAt : 0,
     });
   }
   return out;
@@ -2508,7 +2577,7 @@ async function pullInbox() {
     saveInbox();
     renderInbox();
     let changed = false;
-    for (const it of inboxState.items) if (it.taskId && !it.failed && attachAnswer(it.taskId, it.agents[0] || 'An agent', it.text, it.id, it.at)) changed = true;
+    for (const it of inboxState.items) if (it.taskId && !it.failed && delivered(it) && attachAnswer(it.taskId, it.agents[0] || 'An agent', it.text, it.id, it.at)) changed = true;
     if (changed) { save(); renderLists(); fillDetail(); }
   } catch (e) {
     /* leave the last copy showing; the next sync tries again */
@@ -2517,8 +2586,20 @@ async function pullInbox() {
   }
 }
 
+// Made-ahead results wait (hidden) until their delivery time.
+const delivered = (it) => !it.deliverAt || it.deliverAt <= Date.now();
+let inboxShown = '';
+setInterval(() => {
+  const key = inboxState.items.filter(delivered).map((i) => i.id).join(',');
+  if (key === inboxShown) return;
+  renderInbox();
+  let changed = false;
+  for (const it of inboxState.items) if (it.taskId && !it.failed && delivered(it) && attachAnswer(it.taskId, it.agents[0] || 'An agent', it.text, it.id, it.at)) changed = true;
+  if (changed) { save(); renderLists(); fillDetail(); }
+}, 30000);
 function renderInbox() {
-  const items = inboxState.items.filter((i) => !inboxState.hidden.has(i.id));
+  inboxShown = inboxState.items.filter(delivered).map((i) => i.id).join(',');
+  const items = inboxState.items.filter((i) => !inboxState.hidden.has(i.id) && delivered(i));
   const panel = $('#inbox-panel');
   panel.hidden = !items.length;
   const unread = items.filter((i) => !inboxState.read.has(i.id)).length;
@@ -2647,7 +2728,7 @@ $('#d-give').addEventListener('click', async () => {
   const btn = $('#d-give');
   btn.disabled = true;
   if (IN_APP) {
-    setMsg($('#d-msg'), name + ' is working on it…');
+    setMsg($('#d-msg'), name + ' has it. If the model is busy, it waits its turn, then works on it…');
     try {
       const item = await window.__TAURI__.core.invoke('task_to_agent', args);
       if (item.failed) setMsg($('#d-msg'), item.text, 'err');
@@ -2801,11 +2882,11 @@ function renderStation() {
     const ag = byId(j.agentId);
     const time = minuteText(j.minute);
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].filter((_, i) => j.days && j.days[i]).join(', ');
-    li.append(el('span', 'ib-title', (j.enabled ? '' : '(off) ') + j.name), el('span', 'ib-meta', (ag ? ag.name : '?') + ' · ' + days + ' ' + time));
+    li.append(el('span', 'ib-title', (j.enabled ? '' : '(off) ') + j.name), el('span', 'ib-meta', (ag ? ag.name : '?') + ' · ' + (j.ahead ? 'delivered ' : '') + days + ' ' + time + (j.ahead ? ' (made ahead)' : '')));
     const row = el('div', 'row');
     row.append(
       btn('RUN NOW', () => sendCommand('job_run', { id: j.id }, 'Run "' + j.name + '"')),
-      btn(j.enabled ? 'TURN OFF' : 'TURN ON', () => sendCommand('job_save', { id: j.id, input: { name: j.name, agentId: j.agentId, message: j.message, minute: j.minute, days: j.days, enabled: !j.enabled } }, (j.enabled ? 'Turn off "' : 'Turn on "') + j.name + '"')),
+      btn(j.enabled ? 'TURN OFF' : 'TURN ON', () => sendCommand('job_save', { id: j.id, input: { name: j.name, agentId: j.agentId, message: j.message, minute: j.minute, days: j.days, enabled: !j.enabled, ahead: !!j.ahead } }, (j.enabled ? 'Turn off "' : 'Turn on "') + j.name + '"')),
     );
     const del = btn('DELETE', () => armThen(del, 'SURE?', () => sendCommand('job_delete', { id: j.id }, 'Delete "' + j.name + '"')), 'danger');
     row.append(del);
@@ -2893,11 +2974,11 @@ function agentCard(a, byId) {
 
   const links = el('details', 'lengths');
   links.append(el('summary', '', 'PASSES WORK TO'));
-  const out = [...(a.links || []).map((id) => [id, false]), ...(a.suggest || []).map((id) => [id, true])];
-  for (const [id, sug] of out) {
+  const out = [...(a.links || []).map((id) => [id, 'auto']), ...(a.choose || []).map((id) => [id, 'choose']), ...(a.suggest || []).map((id) => [id, 'suggest']), ...(a.ask || []).map((id) => [id, 'ask'])];
+  for (const [id, kind] of out) {
     const b = byId(id); if (!b) continue;
     const row = el('div', 'row');
-    row.append(el('span', 'ib-meta', (sug ? '? ' : '▸ ') + b.name + (sug ? ' (suggests)' : '')));
+    row.append(el('span', 'ib-meta', ({ auto: '▸ ', choose: '◇ ', suggest: '? ', ask: '✦ ' })[kind] + b.name + ({ auto: '', choose: ' (if it chooses)', suggest: ' (suggests)', ask: ' (can ask)' })[kind]));
     const un = btn('UNLINK', () => armThen(un, 'SURE?', () => sendCommand('unlink', { from: a.id, to: id }, 'Unlink ' + a.name + ' → ' + b.name)));
     row.append(un);
     links.append(row);
@@ -2905,10 +2986,14 @@ function agentCard(a, byId) {
   const to = document.createElement('select');
   for (const b of station.agents.filter((x) => x.id !== a.id)) { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; to.append(o); }
   const mode = document.createElement('select');
-  for (const [v, t] of [['auto', 'sends automatically'], ['suggest', 'can suggest']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; mode.append(o); }
+  for (const [v, t] of [['auto', 'always sends'], ['choose', 'sends if it chooses'], ['suggest', 'can suggest'], ['ask', 'can ask (mid-task)']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; mode.append(o); }
   const lrow = el('div', 'row');
-  lrow.append(to, mode, btn('LINK', () => { const b = byId(to.value); if (b) sendCommand('link', { from: a.id, to: b.id, suggest: mode.value === 'suggest' }, 'Link ' + a.name + ' → ' + b.name); }));
+  lrow.append(to, mode, btn('LINK', () => { const b = byId(to.value); if (b) sendCommand('link', { from: a.id, to: b.id, suggest: mode.value === 'suggest', choose: mode.value === 'choose', ask: mode.value === 'ask' }, 'Link ' + a.name + ' → ' + b.name); }));
   if (station.agents.length > 1) links.append(lrow);
+  const sb = document.createElement('input'); sb.type = 'checkbox'; sb.checked = !!a.sendsBack;
+  const sbL = el('label', 'check'); sbL.append(sb, document.createTextNode(' Sends work it doesn\'t approve back to whoever sent it'));
+  sb.addEventListener('change', () => sendCommand('sends_back', { id: a.id, on: sb.checked }, (sb.checked ? 'Send back: ' : 'Stop sending back: ') + a.name));
+  links.append(sbL);
   card.append(links);
 
   const fire = btn('FIRE ' + a.name.toUpperCase(), () => armThen(fire, 'TAP AGAIN TO FIRE', () => sendCommand('fire', { id: a.id }, 'Fire ' + a.name)), 'danger');
@@ -2940,7 +3025,7 @@ $('#st-j-add').addEventListener('click', async () => {
   const days = Array.from(document.querySelectorAll('#st-j-days input')).map((c) => c.checked);
   const name = $('#st-j-name').value.trim(), message = $('#st-j-text').value.trim();
   if (!name || !message || !m || !days.some(Boolean)) { setMsg($('#st-msg'), 'Fill in a name, a message, a time and at least one day.', 'err'); return; }
-  const ok = await sendCommand('job_save', { id: '', input: { name, agentId: $('#st-j-agent').value, message, minute: Number(m[1]) * 60 + Number(m[2]), days, enabled: true } }, 'Add job "' + name + '"');
+  const ok = await sendCommand('job_save', { id: '', input: { name, agentId: $('#st-j-agent').value, message, minute: Number(m[1]) * 60 + Number(m[2]), days, enabled: true, ahead: $('#st-j-ahead').checked } }, 'Add job "' + name + '"');
   if (ok) { $('#st-j-name').value = ''; $('#st-j-text').value = ''; }
 });
 setupFold('#station-toggle', '#station-body', 'station');
@@ -4155,6 +4240,208 @@ renderTimer();
 armWake();
 setInterval(() => { sweep(false); renderLists(); updateStats(); updateGroupStats(); timerTick(); renderTimer(); }, 1000);
 requestAnimationFrame(frame);
+})();
+
+// ---------------------------------------------------------------- wider side panel
+// Drag the grip on the panel's left edge (or use the arrow keys on it);
+// double-click it to switch between narrow and wide. Remembered on this device
+// (the warehouse and the black hole share the width).
+(function sideGrip() {
+  const KEY = 'agentstation.side';
+  const main = document.querySelector('main');
+  if (!main) return;
+  const grip = document.createElement('div');
+  grip.className = 'side-grip';
+  grip.tabIndex = 0;
+  grip.setAttribute('role', 'separator');
+  grip.setAttribute('aria-orientation', 'vertical');
+  grip.setAttribute('aria-label', 'Side panel width');
+  grip.title = 'Drag to make the side panel wider or narrower. Double-click to switch between narrow and wide.';
+  main.append(grip);
+  const fit = (w) => Math.round(Math.max(300, Math.min(w, window.innerWidth * 0.75)));
+  let width = 360;
+  const set = (w, keep) => {
+    width = fit(w);
+    document.documentElement.style.setProperty('--side', width + 'px');
+    grip.setAttribute('aria-valuenow', String(width));
+    if (keep) { try { localStorage.setItem(KEY, String(width)); } catch (e) { /* this time only */ } }
+  };
+  let saved = 360;
+  try { saved = Number(localStorage.getItem(KEY)) || 360; } catch (e) { /* default */ }
+  set(saved, false);
+  grip.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    grip.setPointerCapture(e.pointerId);
+    grip.classList.add('drag');
+    const move = (ev) => set(window.innerWidth - ev.clientX, false);
+    const up = (ev) => {
+      grip.classList.remove('drag');
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', up);
+      grip.removeEventListener('pointercancel', up);
+      set(window.innerWidth - ev.clientX, true);
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', up);
+    grip.addEventListener('pointercancel', up);
+  });
+  grip.addEventListener('dblclick', () => set(width > 420 ? 360 : window.innerWidth * 0.6, true));
+  grip.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); set(width + 40, true); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); set(width - 40, true); }
+  });
+  // A smaller window: keep the panel from taking over the whole floor.
+  window.addEventListener('resize', () => { if (fit(width) !== width) set(width, false); });
+})();
+
+// ---------------------------------------------------------------- while you were away
+// In the Mac app: tells the core you're here (at most once a minute, only on
+// your own clicks and typing, or when the window comes to the front). After
+// 5+ hours away, the core hands back the night's rundown, and the front
+// desk's printer feeds it out as a shift report (once; it stays in the inbox).
+(function awayWatch() {
+  const core = window.__TAURI__ && window.__TAURI__.core;
+  if (!core) return;
+  // The app's own 3x5 pixel letters, for the report's heading.
+  const G = {
+    S: '011100010001110', H: '101101111101101', I: '111010010010111', F: '111100110100100',
+    T: '111010010010010', R: '110101110101101', E: '111100110100111', P: '110101110100100',
+    O: '010101101101010', ' ': '000000000000000',
+  };
+  const pixelTitle = (text, ink) => {
+    const scale = 4, w = text.length * 4 - 1, h = 5;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.className = 'sr-title';
+    c.style.width = w * scale + 'px'; c.style.height = h * scale + 'px';
+    c.setAttribute('role', 'img');
+    c.setAttribute('aria-label', 'Shift report');
+    const g = c.getContext('2d');
+    g.fillStyle = ink;
+    [...text].forEach((ch, k) => {
+      const bits = G[ch] || G[' '];
+      for (let i = 0; i < 15; i++) if (bits[i] === '1') g.fillRect(k * 4 + (i % 3), Math.floor(i / 3), 1, 1);
+    });
+    return c;
+  };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  /** Reads the plain-text rundown back into its parts. */
+  const parse = (text) => {
+    const lines = text.split('\n');
+    const head = /^While you were away: (.+?) – (.+?) \((.+)\)$/.exec(lines[0] || '');
+    const out = { from: head ? head[1] : '', to: head ? head[2] : '', span: head ? head[3] : '', notes: [], sections: [] };
+    let cur = null;
+    for (const raw of lines.slice(1)) {
+      const line = raw.trimEnd();
+      if (!line.trim()) continue;
+      const bullet = /^\s*•\s(.*)$/.exec(line);
+      if (bullet && cur) { cur.items.push(bullet[1]); continue; }
+      const sec = /^([A-Z][A-Z ]+?)(?: \((\d+)\))?$/.exec(line.trim());
+      if (sec) { cur = { title: sec[1], items: [] }; out.sections.push(cur); continue; }
+      out.notes.push(line.trim());
+    }
+    return out;
+  };
+
+  const show = async (item) => {
+    const old = document.getElementById('away');
+    if (old) old.remove();
+    // Agent colors, for the little ink dot next to each agent's lines.
+    /** @type {Map<string,string>} */ const colors = new Map();
+    try { for (const a of await core.invoke('list_agents')) colors.set(a.name, a.color); } catch (e) { /* plain dots */ }
+    const r = parse(item.text);
+    const sec = (name) => r.sections.find((s) => s.title === name);
+    const results = sec('RESULTS'), agents = sec('AGENTS'), problems = sec('PROBLEMS AND REFUSALS'), floor = sec('MEANWHILE ON THE FLOOR');
+    const answers = agents ? agents.items.reduce((n, t) => n + (Number((/answered (\d+)/.exec(t) || [])[1]) || 0), 0) : 0;
+
+    const wrap = el('div'); wrap.id = 'away';
+    wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', 'While you were away');
+    const printer = el('div', 'sr-printer');
+    printer.append(el('span', 'sr-led'), el('span', 'sr-slot'));
+    const paper = el('article', 'sr-paper');
+
+    paper.append(pixelTitle('SHIFT REPORT', '#23265c'));
+    paper.append(el('p', 'sr-sub', 'While you were away'));
+    const when = el('p', 'sr-when');
+    when.append(el('span', '', r.from), el('span', 'sr-arrow', '→'), el('span', '', r.to));
+    paper.append(when, el('p', 'sr-span', r.span + ' away'));
+    paper.append(el('hr', 'sr-rule'));
+
+    // The tally, receipt style.
+    const tally = el('dl', 'sr-tally');
+    for (const [label, n, bad] of [['Results', results ? results.items.length : 0, false], ['Answers', answers, false], ['Problems', problems ? problems.items.length : 0, true]]) {
+      const row = el('div', 'sr-row' + (bad && n ? ' sr-bad' : ''));
+      row.append(el('dt', '', label), el('span', 'sr-dots'), el('dd', '', String(n)));
+      tally.append(row);
+    }
+    paper.append(tally);
+    for (const n of r.notes) paper.append(el('p', 'sr-note', n));
+
+    for (const s of r.sections) {
+      const box = el('section', 'sr-sec' + (s === floor ? ' sr-floor' : s === problems ? ' sr-problems' : ''));
+      box.append(el('h3', '', s === floor ? 'Meanwhile, on the floor' : s.title.charAt(0) + s.title.slice(1).toLowerCase()));
+      const ul = el('ul');
+      for (const t of s.items) {
+        const li = el('li');
+        const who = [...colors.keys()].find((n) => t.startsWith(n + ' ') || t.includes(' — ' + n));
+        const dot = el('i', 'sr-dot');
+        if (who) dot.style.background = colors.get(who) || '';
+        li.append(dot, el('span', '', t));
+        ul.append(li);
+      }
+      box.append(ul);
+      paper.append(box);
+    }
+
+    const foot = el('footer', 'sr-foot');
+    const code = el('div', 'sr-code'); // a printed strip, made from the report's own id
+    for (const ch of String(item.id).slice(0, 24)) { const b = el('i'); b.style.width = (1 + (parseInt(ch, 16) % 3)) + 'px'; code.append(b); }
+    foot.append(code, el('p', 'sr-printed', 'Printed at the front desk'));
+    paper.append(foot);
+
+    const done = el('button', 'primary sr-done', 'Done');
+    done.type = 'button';
+    const close = () => {
+      document.removeEventListener('keydown', esc);
+      wrap.classList.add('sr-out');
+      setTimeout(() => wrap.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 380);
+    };
+    const esc = (e) => { if (e.key === 'Escape') close(); };
+    done.addEventListener('click', close);
+    wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+    document.addEventListener('keydown', esc);
+
+    const stage = el('div', 'sr-stage');
+    const feedwin = el('div', 'sr-feedwin');
+    feedwin.append(paper);
+    stage.append(printer, feedwin, done);
+    wrap.append(stage);
+    document.body.append(wrap);
+    // Feed the paper out line by line, like the printer it is.
+    const fullH = paper.scrollHeight;
+    paper.style.setProperty('--feed', fullH + 'px');
+    paper.style.setProperty('--steps', String(Math.max(8, Math.round(fullH / 18))));
+    requestAnimationFrame(() => wrap.classList.add('sr-in'));
+    done.focus({ preventScroll: true });
+    core.invoke('mark_inbox_read', { id: item.id }).catch(() => {});
+  };
+
+  let last = 0;
+  const ping = async () => {
+    if (document.visibilityState !== 'visible') return;
+    const now = Date.now();
+    if (now - last < 60000) return;
+    last = now;
+    let item = null;
+    try { item = await core.invoke('mark_active'); } catch (e) { return; }
+    if (item && item.text) show(item);
+  };
+  window.addEventListener('pointerdown', ping, { passive: true });
+  window.addEventListener('keydown', ping);
+  window.addEventListener('focus', ping);
+  if (document.hasFocus()) setTimeout(ping, 800);
+  window.__showShiftReport = show; // for tests only; the core decides when
 })();
 </script>
 </body>
