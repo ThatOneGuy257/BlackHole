@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fBePBOqbc0PNHd6egg1Qg43JrCVNnuAInbbud4MTwcY='; style-src 'sha256-vpwqS8QZgfXTdHZFbd9LZ6tUtBFzs1Yub7qjstFWdPQ='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ljHEf4YpQjkL/Q2Gw0eB02OOO0z+Ry7XIlZSqDQybbA='; style-src 'sha256-fDRmAFV9TgDZ2131LV9k0gUviEYlIK7nkdTDD82gz0Q='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -332,14 +332,22 @@ button.mini { padding: 5px 10px; box-shadow: none; }
   }
   .rail-tab { width: 100%; padding: 10px 2px; font-size: 10px; letter-spacing: 1px; box-shadow: none; }
   .rail-tab.on { background: #3a2410; border-color: var(--orange); color: #ffd9b0; }
+  /* The window never scrolls sideways, whatever opens. */
+  body.railed { overflow: hidden; }
+  body.railed main { overflow: clip; }
   body.railed aside {
     position: absolute; top: 0; bottom: 0; right: 76px; z-index: 20;
     width: var(--side, 380px); max-width: calc(100% - 140px);
     background: var(--bg); border-left: 2px solid var(--edge); box-shadow: -14px 0 30px rgba(0, 0, 0, .55);
-    transform: translateX(calc(100% + 90px)); visibility: hidden;
-    transition: transform .18s ease-out, visibility 0s linear .18s;
+    /* closed: faded and nudged right, still inside the window */
+    opacity: 0; transform: translate3d(14px, 0, 0); visibility: hidden; pointer-events: none;
+    will-change: opacity, transform; contain: layout paint; backface-visibility: hidden;
+    transition: opacity .14s ease-out, transform .14s ease-out, visibility 0s linear .14s;
   }
-  body.railed aside.out { transform: none; visibility: visible; transition: transform .18s ease-out; }
+  body.railed aside.out {
+    opacity: 1; transform: none; visibility: visible; pointer-events: auto;
+    transition: opacity .14s ease-out, transform .14s ease-out, visibility 0s;
+  }
   body.railed aside [data-tab].off { display: none !important; }
   body.railed .rail-head {
     display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -843,6 +851,8 @@ html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); te
 </main>
 <script>(() => {
 'use strict';
+/** Scrolls a panel into view, except inside the pop-out menu (which shows it already, and must never scroll the window). @param {Element} el @param {ScrollIntoViewOptions} opts */
+const reveal = (el, opts) => { if (!document.body.classList.contains('railed')) el.scrollIntoView(opts); };
 /** The pop-out menu, on wide windows (see rail.js). @type {any} */ let railApi = null;
 
 // ---------------------------------------------------------------- settings
@@ -1427,7 +1437,7 @@ function select(type, id) {
   renderLists();
   if (sel) {
     const panel = sel.type === 'task' ? $('#detail') : $('#gdetail');
-    panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    reveal(panel, { block: 'nearest', behavior: 'smooth' });
     if (railApi) railApi.open('tasks');
   }
   if (sel && sel.type === 'group') zoomTo(sel.id);
@@ -1679,14 +1689,14 @@ function openNewTask(groupId) {
   $('#new-task-panel').hidden = false;
   if (groupId) $('#n-group').value = groupId;
   setMsg($('#n-err'), '');
-  $('#new-task-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  reveal($('#new-task-panel'), { block: 'nearest', behavior: 'smooth' });
   $('#n-title').focus();
 }
 function openNewGroup() {
   $('#new-task-panel').hidden = true;
   $('#new-group-panel').hidden = false;
   setMsg($('#g-err'), '');
-  $('#new-group-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  reveal($('#new-group-panel'), { block: 'nearest', behavior: 'smooth' });
   $('#g-name').focus();
 }
 $('#add-task-btn').addEventListener('click', () => {
@@ -1888,7 +1898,7 @@ for (const list of Object.keys(LISTS)) {
 function openShop() {
   $('#shop-panel').hidden = false;
   renderShop();
-  $('#shop-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  reveal($('#shop-panel'), { block: 'nearest', behavior: 'smooth' });
 }
 $('#shop-close').addEventListener('click', () => { $('#shop-panel').hidden = true; editingItem = null; });
 
@@ -2001,7 +2011,7 @@ $('#import-file').addEventListener('change', (ev) => {
         plural(s.groups.length, 'group') + ' in this file?' +
         (s.shopping ? ' Your shopping list will be replaced too.' : ' Your shopping list stays as it is.');
       $('#import-confirm').hidden = false;
-      $('#import-confirm').scrollIntoView({ block: 'nearest' });
+      reveal($('#import-confirm'), { block: 'nearest' });
       return;
     }
     applyImport(s);
@@ -4624,7 +4634,7 @@ canvas.addEventListener('click', (e) => {
     select(h.type, h.id);
     return;
   }
-  if (h && h.type === 'astro') { $('#timer-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+  if (h && h.type === 'astro') { if (railApi) railApi.open('timer'); reveal($('#timer-panel'), { block: 'nearest', behavior: 'smooth' }); return; }
   if (h && h.type === 'outpost') { zoomTo('outpost'); return; }
   if (h && h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); zoomTo(h.id); return; }
   if (h) select(h.type, h.id); else if (sel) select(null);
@@ -4922,6 +4932,7 @@ function makeRail(cfg) {
   }
   let current = cfg.fallback;
   let isOpen = false;
+  let shownTab = '';
   try { const saved = localStorage.getItem(cfg.key); if (saved && cfg.tabs.some((t) => t.id === saved)) current = saved; } catch (e) { /* default */ }
   const remember = () => { try { localStorage.setItem(cfg.key, current); } catch (e) { /* fine */ } };
   /** A tab shows when it can always be opened, or something of its is showing. @param {typeof cfg.tabs[number]} t */
@@ -4937,16 +4948,28 @@ function makeRail(cfg) {
     }
     const tab = cfg.tabs.find((t) => t.id === current) || cfg.tabs[0];
     if (!available(tab)) current = cfg.fallback;
-    aside.classList.toggle('out', isOpen);
-    document.body.classList.toggle('rail-open', isOpen);
-    for (const el of aside.querySelectorAll('[data-tab]')) el.classList.toggle('off', /** @type {HTMLElement} */ (el).dataset.tab !== current);
+    const switched = shownTab !== current;
+    shownTab = current;
+    if (aside.classList.contains('out') !== isOpen) aside.classList.toggle('out', isOpen);
+    if (document.body.classList.contains('rail-open') !== isOpen) document.body.classList.toggle('rail-open', isOpen);
+    for (const el of aside.querySelectorAll('[data-tab]')) {
+      const off = /** @type {HTMLElement} */ (el).dataset.tab !== current;
+      if (el.classList.contains('off') !== off) el.classList.toggle('off', off);
+    }
+    if (switched) aside.scrollTop = 0;
     for (const t of cfg.tabs) {
       const b = /** @type {HTMLButtonElement} */ (buttons.get(t.id));
-      b.hidden = !available(t);
-      b.setAttribute('aria-pressed', String(isOpen && t.id === current));
-      b.classList.toggle('on', isOpen && t.id === current);
+      const hide = !available(t), on = isOpen && t.id === current;
+      if (b.hidden !== hide) b.hidden = hide;
+      if (b.classList.contains('on') !== on) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
     }
-    title.textContent = (cfg.tabs.find((t) => t.id === current) || cfg.tabs[0]).label;
+    const label = (cfg.tabs.find((t) => t.id === current) || cfg.tabs[0]).label;
+    if (title.textContent !== label) title.textContent = label;
+    // Nothing should ever scroll the page sideways (it would shift the scene
+    // under the mouse); put it back if something did.
+    if (main.scrollLeft || main.scrollTop) { main.scrollLeft = 0; main.scrollTop = 0; }
+    const se = document.scrollingElement;
+    if (se && (se.scrollLeft || se.scrollTop)) { se.scrollLeft = 0; se.scrollTop = 0; }
   }
   close.addEventListener('click', () => { isOpen = false; apply(); });
   document.addEventListener('keydown', (e) => {
@@ -4955,17 +4978,30 @@ function makeRail(cfg) {
   // Something you opened elsewhere (a planet, a desk, the filing cabinet)
   // brings its tab out; when it closes, the tab goes back to the default.
   const watched = cfg.tabs.flatMap((t) => (t.auto || []).map((el) => ({ el, t })));
+  // Changes come in bursts (a panel closing as another opens): handle them
+  // together on the next frame, so the menu never shows an in-between state.
+  let queued = false;
+  const later = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; apply(); }); } };
   new MutationObserver((list) => {
+    let relevant = false;
     for (const m of list) {
-      const hit = watched.find((w) => w.el === m.target);
-      if (!hit || !(hit.el instanceof HTMLElement)) continue;
+      const el = /** @type {HTMLElement} */ (m.target);
+      if (!el.dataset || !el.dataset.tab) continue; // only our sections matter
       const was = m.oldValue !== null; // hidden before?
-      if (was === hit.el.hidden) continue; // set again to the same: nothing changed
-      if (!hit.el.hidden) { current = hit.t.id; isOpen = true; }
+      if (was === el.hidden) continue; // set again to the same: nothing changed
+      relevant = true;
+      const hit = watched.find((w) => w.el === el);
+      if (!hit) continue;
+      if (!el.hidden) { current = hit.t.id; isOpen = true; }
       else if (current === hit.t.id && !available(hit.t)) { current = cfg.fallback; }
     }
-    apply();
+    if (relevant) later();
   }).observe(aside, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
+  // Some panels scroll themselves into view when they open; inside the
+  // pop-out that must only ever scroll the pop-out, never the window.
+  for (const el of [main, document.scrollingElement]) {
+    if (el) el.addEventListener('scroll', () => { if (document.body.classList.contains('railed')) { el.scrollLeft = 0; el.scrollTop = 0; } }, { passive: true });
+  }
   wide.addEventListener('change', apply);
   apply();
   return { open: (/** @type {string} */ id) => { current = id; isOpen = true; apply(); }, close: () => { isOpen = false; apply(); } };
