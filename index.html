@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fxJFWDnFLxWp9lqOYQ2VY93++uRp+KdYUR9hoA0gCpY='; style-src 'sha256-BKKwsEn1N3olbFF6XOfpBIzorCQPYZfFEtq2ShN1+XY='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tXQgYexiIoHd0P6m/eHmNACrdNf3bkbY+a9Q0+QrIr8='; style-src 'sha256-xQKGXvLbu8G1d6J/ocB7EH21QfaPm/cfp3zqzvIerio='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -320,6 +320,159 @@ button.mini { padding: 5px 10px; box-shadow: none; }
   #away.sr-in .sr-paper, #away.sr-in .sr-led, #away.sr-in .sr-done { animation: none; }
   #away.sr-out .sr-paper { transition: none; transform: none; }
 }
+
+/* Looks. HUD (below) is the default; "classic" is the original pixel look
+   from style.css, chosen with <html data-theme="classic">. Looks change only
+   the panels and controls around the two pixel scenes, never the scenes. */
+
+/* ============================================================ HUD
+   A ship's heads-up display: sections have no boxes, only the same pixel
+   corner brackets the Black Hole puts around a picked planet. Cyan readouts,
+   a faint scanline, and orange brackets on what you're working on. */
+html:not([data-theme=classic]) {
+  --bg: #03060d;
+  --panel: #07101c;
+  --edge: #163449;
+  --ink: #d9f6ff;
+  --quiet: #6fa3b8;
+  --cyan: #4fe3ff;
+  --orange: #ffa94d;
+  --brk: #4fe3ff;
+}
+html:not([data-theme=classic]) body { background: var(--bg); }
+html:not([data-theme=classic]) .bar { border-bottom: 0; background: var(--bg); }
+html:not([data-theme=classic]) .bar::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px; background: repeating-linear-gradient(90deg, var(--edge) 0 10px, transparent 10px 14px); }
+html:not([data-theme=classic]) .bar { position: relative; }
+html:not([data-theme=classic]) .bar h1 { color: var(--orange); text-shadow: 0 0 8px rgba(255, 169, 77, .45); }
+html:not([data-theme=classic]) aside { border-left: 0; gap: 18px; padding: 16px 18px 18px; }
+html:not([data-theme=classic]) .side-grip::after { background: var(--edge); }
+/* The brackets: eight short bars, two at each corner. */
+html:not([data-theme=classic]) .panel {
+  --l: 14px; --t: 3px;
+  border: 0; box-shadow: none; padding: 14px 16px;
+  background:
+    linear-gradient(var(--brk), var(--brk)) top left / var(--l) var(--t) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) top left / var(--t) var(--l) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) top right / var(--l) var(--t) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) top right / var(--t) var(--l) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) bottom left / var(--l) var(--t) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) bottom left / var(--t) var(--l) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) bottom right / var(--l) var(--t) no-repeat,
+    linear-gradient(var(--brk), var(--brk)) bottom right / var(--t) var(--l) no-repeat,
+    repeating-linear-gradient(transparent 0 3px, rgba(79, 227, 255, .025) 3px 4px),
+    rgba(7, 16, 28, .7);
+}
+html:not([data-theme=classic]) .panel.detail { --brk: var(--orange); --l: 20px; background-color: rgba(30, 16, 6, .45); }
+html:not([data-theme=classic]) .panel.timer.running { --brk: #7dff9e; }
+html:not([data-theme=classic]) .panel.lost { --brk: #ff5c6c; }
+html:not([data-theme=classic]) .panel h2, html:not([data-theme=classic]) summary { color: var(--cyan); text-shadow: 0 0 8px rgba(79, 227, 255, .45); }
+html:not([data-theme=classic]) .detail-head h2 { color: var(--orange); text-shadow: 0 0 8px rgba(255, 169, 77, .45); }
+html:not([data-theme=classic]) .panel h2::before { content: "\25C6"; display: inline-block; margin-right: 7px; font-size: 9px; vertical-align: 2px; }
+html:not([data-theme=classic]) summary { list-style: none; }
+html:not([data-theme=classic]) summary::-webkit-details-marker { display: none; }
+html:not([data-theme=classic]) summary::before { content: "[+] "; color: var(--quiet); }
+html:not([data-theme=classic]) details[open] > summary::before { content: "[-] "; color: var(--cyan); }
+html:not([data-theme=classic]) .lengths summary { color: var(--quiet); text-shadow: none; }
+html:not([data-theme=classic]) label { color: var(--quiet); }
+html:not([data-theme=classic]) input, html:not([data-theme=classic]) textarea, html:not([data-theme=classic]) select {
+  background: rgba(0, 0, 0, .45); border: 0; border-bottom: 2px solid var(--edge);
+}
+html:not([data-theme=classic]) :is(input, textarea, select):focus { outline: 0; border-bottom-color: var(--cyan); background: rgba(79, 227, 255, .06); }
+html:not([data-theme=classic]) button {
+  background: transparent; color: var(--cyan); border: 2px solid var(--edge); box-shadow: none;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+html:not([data-theme=classic]) button:hover { background: rgba(79, 227, 255, .1); border-color: var(--cyan); }
+html:not([data-theme=classic]) button:active { transform: none; background: rgba(79, 227, 255, .2); }
+html:not([data-theme=classic]) button:focus-visible { outline: 0; border-color: var(--orange); }
+html:not([data-theme=classic]) button.primary { background: var(--orange); border-color: var(--orange); color: #1c0d00; }
+html:not([data-theme=classic]) button.primary:hover { background: #ffbe73; }
+html:not([data-theme=classic]) button.danger { color: #ff8a96; border-color: #5a1f2a; }
+html:not([data-theme=classic]) button.danger:hover { background: rgba(255, 92, 108, .12); border-color: #ff5c6c; }
+html:not([data-theme=classic]) button.armed { background: #ff5c6c; color: #1a0005; border-color: #ff5c6c; }
+html:not([data-theme=classic]) .navbtn { background: transparent; color: var(--cyan); box-shadow: none; clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+html:not([data-theme=classic]) #pause-all { color: #ff8a96; }
+html:not([data-theme=classic]) #pause-all.paused { background: var(--orange); color: #1c0d00; border-color: var(--orange); }
+html:not([data-theme=classic]) #battery.on { background: #7dff9e; color: #031a0a; border-color: #7dff9e; }
+html:not([data-theme=classic]) .close { clip-path: none; border-color: transparent; color: var(--quiet); }
+html:not([data-theme=classic]) .close:hover { color: var(--ink); background: none; }
+html:not([data-theme=classic]) .fold-toggle, html:not([data-theme=classic]) .inbox .ib-open, html:not([data-theme=classic]) .steps .rm, html:not([data-theme=classic]) .shop .rm { clip-path: none; border: 0; background: none; }
+html:not([data-theme=classic]) .fold-toggle { color: var(--cyan); }
+html:not([data-theme=classic]) .steps .rm, html:not([data-theme=classic]) .shop .rm { color: var(--quiet); }
+/* lists: plain rows; the picked one gets little brackets */
+html:not([data-theme=classic]) .list button {
+  clip-path: none; border: 0; background: transparent; color: var(--ink); padding: 6px 10px;
+}
+html:not([data-theme=classic]) .list button:hover { background: rgba(79, 227, 255, .06); }
+html:not([data-theme=classic]) .list button.sel {
+  background:
+    linear-gradient(var(--orange), var(--orange)) top left / 8px 2px no-repeat,
+    linear-gradient(var(--orange), var(--orange)) top left / 2px 8px no-repeat,
+    linear-gradient(var(--orange), var(--orange)) bottom right / 8px 2px no-repeat,
+    linear-gradient(var(--orange), var(--orange)) bottom right / 2px 8px no-repeat,
+    rgba(255, 169, 77, .08);
+}
+html:not([data-theme=classic]) .list button.child { background: transparent; }
+html:not([data-theme=classic]) .shelf li, html:not([data-theme=classic]) .inbox li { border: 0; border-left: 2px solid var(--edge); background: rgba(0, 0, 0, .3); }
+html:not([data-theme=classic]) .inbox li.unread { border-left-color: var(--orange); }
+html:not([data-theme=classic]) .shelf li + li, html:not([data-theme=classic]) .inbox li + li { margin-top: 6px; }
+html:not([data-theme=classic]) .archive-list li.sel { border-left-color: var(--orange); }
+html:not([data-theme=classic]) .shelf button, html:not([data-theme=classic]) .inbox .ib-hide { padding: 3px 9px; }
+html:not([data-theme=classic]) .chat-wrap { border: 0; border-top: 2px solid var(--edge); border-bottom: 2px solid var(--edge); background: rgba(0, 0, 0, .35); }
+html:not([data-theme=classic]) .chat li { border: 0; border-left: 2px solid var(--edge); background: rgba(255, 255, 255, .03); }
+html:not([data-theme=classic]) .chat li.user { border-left: 0; border-right: 2px solid var(--cyan); background: rgba(79, 227, 255, .07); }
+html:not([data-theme=classic]) .chat li.assistant { border-left-color: #7dff9e; background: rgba(125, 255, 158, .05); }
+html:not([data-theme=classic]) .chat li.via { border-left-color: #b49cff; }
+html:not([data-theme=classic]) .chat li.error { border-left-color: #ff5c6c; background: rgba(255, 92, 108, .08); }
+html:not([data-theme=classic]) .chat li.thinking { border-left-style: dashed; }
+html:not([data-theme=classic]) .meter { border: 0; height: 8px; background: repeating-linear-gradient(90deg, var(--edge) 0 6px, transparent 6px 8px); }
+html:not([data-theme=classic]) .meter > div { -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
+html:not([data-theme=classic]) #toast { border: 0; border-left: 3px solid #ff5c6c; background: rgba(26, 6, 10, .92); box-shadow: none; }
+html:not([data-theme=classic]) #toast.good { border-left-color: #7dff9e; background: rgba(4, 22, 12, .92); }
+html:not([data-theme=classic]) .warn { border: 0; border-left: 3px solid #ff5c6c; }
+html:not([data-theme=classic]) .confirm { border: 0; border-left: 3px solid #ff5c6c; }
+html:not([data-theme=classic]) .days label, html:not([data-theme=classic]) .st-days label { border: 2px solid var(--edge); background: transparent; }
+html:not([data-theme=classic]) .days label:has(input:checked), html:not([data-theme=classic]) .st-days label:has(input:checked) { background: var(--orange); border-color: var(--orange); color: #1c0d00; }
+html:not([data-theme=classic]) .t-time { color: var(--orange); text-shadow: 0 0 12px rgba(255, 169, 77, .5); }
+html:not([data-theme=classic]) .t-phase { color: var(--cyan); }
+html:not([data-theme=classic]) .log li { border-bottom: 1px dashed var(--edge); }
+html:not([data-theme=classic]) .badge { border-color: var(--edge); }
+html:not([data-theme=classic]) .station .st-chat li { border: 0; border-left: 2px solid var(--edge); }
+html:not([data-theme=classic]) .shop-part + .shop-part { border-top: 2px dashed var(--edge); }
+html:not([data-theme=classic]) .shop .item + .item { border-top-color: var(--edge); }
+html:not([data-theme=classic]) .swatch span { border: 2px solid #000; box-shadow: none; }
+
+/* ---------------------------------------------- less going on
+   Only what you're working on gets brackets; every other section is a
+   heading over a thin dashed line. Row buttons are plain words. */
+html:not([data-theme=classic]) .panel:not(.detail):not(.running) {
+  background: none; padding: 12px 2px 4px; border-top: 1px dashed var(--edge);
+}
+html:not([data-theme=classic]) aside { gap: 6px; }
+html:not([data-theme=classic]) .panel.detail, html:not([data-theme=classic]) .panel.running { margin: 6px 0; }
+html:not([data-theme=classic]) .panel.lost { border-top-color: #5a1f2a; }
+html:not([data-theme=classic]) summary::before { content: "\25B8"; display: inline-block; width: 14px; color: var(--quiet); }
+html:not([data-theme=classic]) details[open] > summary::before { content: "\25BE"; color: var(--cyan); }
+html:not([data-theme=classic]) .shelf li, html:not([data-theme=classic]) .inbox li { background: none; padding: 6px 0 6px 10px; }
+html:not([data-theme=classic]) .shelf .n-actions { gap: 2px 12px; justify-content: flex-start; }
+html:not([data-theme=classic]) .shelf .n-actions button, html:not([data-theme=classic]) .inbox .ib-hide {
+  clip-path: none; border: 0; background: none; padding: 2px 0; font-size: 11px; color: var(--quiet);
+}
+html:not([data-theme=classic]) .shelf .n-actions button:hover, html:not([data-theme=classic]) .inbox .ib-hide:hover { color: var(--cyan); background: none; }
+html:not([data-theme=classic]) .shelf .n-actions button.danger, html:not([data-theme=classic]) .shelf .n-actions button.armed { color: #ff8a96; background: none; }
+html:not([data-theme=classic]) .fine { color: #4f7a8c; }
+html:not([data-theme=classic]) .sub { color: var(--quiet); }
+
+/* Long help notes fold to one line; click to read the rest (every look). */
+.fine.tip { cursor: pointer; }
+.fine.tip:not(.open) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fine.tip::before { content: "?"; display: inline-block; width: 13px; height: 13px; margin-right: 6px; line-height: 11px; text-align: center; font-size: 10px; font-weight: bold; border: 1px solid currentColor; vertical-align: 1px; }
+.fine.tip:hover { color: var(--quiet); }
+.fine.tip:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+/* The Black Hole's fold arrows: a pixel triangle instead of the letter "v". */
+html:not([data-theme=classic]) .fold-toggle .chev { font-size: 0; width: 12px; text-align: center; }
+html:not([data-theme=classic]) .fold-toggle .chev::before { content: "\25BE"; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -384,6 +537,7 @@ button.mini { padding: 5px 10px; box-shadow: none; }
           <select id="d-agent" aria-label="Agent to give this task to"></select>
           <button type="button" id="d-give">GIVE</button>
         </div>
+        <p class="msg ok" id="d-give-status" hidden></p>
         <p class="fine">The agent sees only this task: its title, notes and deadline. Its answer is added to the notes.</p>
       </div>
       <p class="msg" id="d-msg" hidden></p>
@@ -524,7 +678,7 @@ button.mini { padding: 5px 10px; box-shadow: none; }
         <div class="row"><button type="button" class="danger" id="st-pause">PAUSE ALL</button></div>
         <ul class="inbox station" id="st-agents"></ul>
         <details class="lengths" id="st-hire-box">
-          <summary>HIRE AN AGENT</summary>
+          <summary>HIRE STAFF</summary>
           <label>NAME<input id="st-h-name" maxlength="40" placeholder="e.g. Nova"></label>
           <label>ROLE<input id="st-h-role" maxlength="80" placeholder="e.g. Researcher"></label>
           <label>MODEL<select id="st-h-model"></select></label>
@@ -572,6 +726,11 @@ button.mini { padding: 5px 10px; box-shadow: none; }
         <div class="row clock-row" role="radiogroup" aria-label="Clock">
           <label class="check"><input type="radio" name="clock" value="12" id="clock-12"> Regular (3:05 PM)</label>
           <label class="check"><input type="radio" name="clock" value="24" id="clock-24"> Military (15:05)</label>
+        </div>
+        <p class="sub">LOOK ON THIS DEVICE</p>
+        <div class="row" role="radiogroup" aria-label="Look">
+          <label class="check"><input type="radio" name="look" value="hud" id="look-hud"> HUD</label>
+          <label class="check"><input type="radio" name="look" value="classic" id="look-classic"> Classic pixel</label>
         </div>
         <p class="sub">ALERTS ON THIS DEVICE</p>
         <div class="row"><button type="button" id="alerts">ENABLE ALERTS</button></div>
@@ -912,6 +1071,24 @@ function pad(n) { return String(n).padStart(2, '0'); }
 // Regular (3:05 PM) or military (15:05) time, chosen per device in MORE.
 // Shared with the warehouse window (same key).
 const CLOCK_KEY = 'agentstation.clock';
+// The look (HUD, or the classic pixel one), also per device and shared with
+// the warehouse window.
+const LOOK_KEY = 'agentstation.look';
+function lookNow() { try { return localStorage.getItem(LOOK_KEY) === 'classic' ? 'classic' : 'hud'; } catch (e) { return 'hud'; } }
+document.documentElement.dataset.theme = lookNow();
+/** Long help notes fold to one line until clicked. @param {ParentNode} root */
+function foldTips(root) {
+  for (const p of root.querySelectorAll('p.fine:not(.tip)')) {
+    if (p.textContent.trim().length < 90) continue;
+    p.classList.add('tip');
+    p.tabIndex = 0;
+    p.setAttribute('role', 'button');
+    p.setAttribute('aria-expanded', 'false');
+    const flip = () => { const open = p.classList.toggle('open'); p.setAttribute('aria-expanded', String(open)); };
+    p.addEventListener('click', (e) => { if (!(e.target instanceof HTMLAnchorElement)) flip(); });
+    p.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+  }
+}
 function clock24() { try { return localStorage.getItem(CLOCK_KEY) === '24'; } catch (e) { return false; } }
 const clockOpts = () => (clock24() ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : { hour: 'numeric', minute: '2-digit', hour12: true });
 function whenText(t) { return new Date(t).toLocaleString([], Object.assign({ month: 'short', day: 'numeric' }, clockOpts())); }
@@ -1808,6 +1985,14 @@ function refreshAlertsButton() {
   else { b.textContent = 'ENABLE ALERTS'; b.disabled = false; }
 }
 $(clock24() ? '#clock-24' : '#clock-12').checked = true;
+$(lookNow() === 'classic' ? '#look-classic' : '#look-hud').checked = true;
+for (const r of document.querySelectorAll('input[name="look"]')) {
+  r.addEventListener('change', () => {
+    try { localStorage.setItem(LOOK_KEY, r.value); } catch (e) { /* stays as it was */ }
+    document.documentElement.dataset.theme = r.value === 'classic' ? 'classic' : 'hud';
+  });
+}
+foldTips(document);
 for (const r of document.querySelectorAll('input[name="clock"]')) {
   r.addEventListener('change', () => {
     try { localStorage.setItem(CLOCK_KEY, r.value); } catch (e) { /* stays as it was */ }
@@ -2719,6 +2904,19 @@ async function fillGiveBox() {
   pick.textContent = '';
   for (const a of list) { const o = document.createElement('option'); o.value = a.id; o.textContent = a.name + (a.role ? ' (' + a.role + ')' : ''); pick.append(o); }
   if (keep && list.some((a) => a.id === keep)) pick.value = keep;
+  giveStatus();
+}
+// Tasks handed to an agent on this Mac that it's still working on (or that
+// are waiting in line): task id -> { name, at }. Only that task's GIVE is
+// locked; others can be handed over meanwhile and wait their turn.
+const giving = new Map();
+function giveStatus() {
+  const t = selTask(), el = $('#d-give-status'), btn = $('#d-give');
+  const g = t && giving.get(t.id);
+  el.hidden = !g;
+  if (g) el.textContent = '✓ ' + g.name + ' has this task (since ' + whenText(g.at) + '). It waits in line if the model is busy. The answer is added to the notes when it’s done.';
+  btn.disabled = !!g;
+  btn.textContent = g ? 'WITH ' + g.name.toUpperCase() : 'GIVE';
 }
 $('#d-give').addEventListener('click', async () => {
   const t = selTask(); if (!t) return;
@@ -2726,19 +2924,35 @@ $('#d-give').addEventListener('click', async () => {
   const name = $('#d-agent').selectedOptions[0] ? $('#d-agent').selectedOptions[0].textContent.replace(/ \(.*\)$/, '') : 'The agent';
   const args = { agentId, taskId: t.id, title: t.title, notes: t.notes, deadline: t.deadline ? new Date(t.deadline).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + minuteText(new Date(t.deadline).getHours() * 60 + new Date(t.deadline).getMinutes()) : '' };
   const btn = $('#d-give');
-  btn.disabled = true;
   if (IN_APP) {
-    setMsg($('#d-msg'), name + ' has it. If the model is busy, it waits its turn, then works on it…');
+    if (giving.has(t.id)) return;
+    const title = t.title.length > 40 ? t.title.slice(0, 40) + '…' : t.title;
+    giving.set(t.id, { name, at: Date.now() });
+    giveStatus();
+    toast(name + ' got “' + title + '”.', true);
+    // Messages about this task go under it only while it's the open one.
+    const here = (text, kind) => { if (selTask() && selTask().id === t.id) setMsg($('#d-msg'), text, kind); };
     try {
       const item = await window.__TAURI__.core.invoke('task_to_agent', args);
-      if (item.failed) setMsg($('#d-msg'), item.text, 'err');
+      giving.delete(t.id);
+      if (item.failed) { here(item.text, 'err'); toast(name + ' couldn’t finish “' + title + '”: ' + item.text); }
       else {
         attachAnswer(t.id, name, item.text, item.id, item.at);
         save(); renderLists(); fillDetail();
-        setMsg($('#d-msg'), name + "'s answer was added to the notes.", 'ok');
+        here(name + "'s answer was added to the notes.", 'ok');
+        toast(name + ' finished “' + title + '”. The answer is in its notes.', true);
       }
-    } catch (e) { setMsg($('#d-msg'), typeof e === 'string' ? e : 'Couldn\'t hand it over.', 'err'); }
+    } catch (e) {
+      const why = typeof e === 'string' ? e : 'Couldn\'t hand it over.';
+      here(why, 'err');
+      toast(name + ' didn’t get “' + title + '”: ' + why);
+    } finally {
+      giving.delete(t.id);
+      giveStatus();
+    }
+    return;
   } else {
+    btn.disabled = true;
     const ok = await sendCommand('task', args, 'Give "' + t.title + '" to ' + name);
     if (ok) setMsg($('#d-msg'), 'Sent to your Mac. The answer will be added to the notes when it\'s done.', 'ok');
   }
@@ -2826,11 +3040,17 @@ const AGENT_COLORS = ['#b48cff', '#3fd0b0', '#ff7ac8', '#b6e35a', '#6aa8ff', '#e
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function btn(label, fn, cls) { const b = el('button', cls || '', label); b.type = 'button'; b.addEventListener('click', fn); return b; }
 function field(label, input) { const l = el('label', '', label); l.append(input); return l; }
+/** Cloud models show which service runs them. @param {string} m */
+function modelLabel(m) {
+  if (m.startsWith('claude:')) return 'Claude (cloud): ' + m.slice(7);
+  if (m.startsWith('gemini:')) return 'Gemini (cloud): ' + m.slice(7);
+  return m;
+}
 function modelSelect(current) {
   const sel = document.createElement('select');
   const list = (station && Array.isArray(station.models) ? station.models.slice() : []);
   if (current && !list.includes(current)) list.unshift(current);
-  for (const m of list) { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.append(o); }
+  for (const m of list) { const o = document.createElement('option'); o.value = m; o.textContent = modelLabel(m); sel.append(o); }
   sel.value = current || list[0] || '';
   return sel;
 }
@@ -2899,7 +3119,7 @@ function renderStation() {
   if (keepJ) ja.value = keepJ;
   const hm = $('#st-h-model'), keepM = hm.value;
   hm.textContent = '';
-  for (const mname of station.models || []) { const o = document.createElement('option'); o.value = mname; o.textContent = mname; hm.append(o); }
+  for (const mname of station.models || []) { const o = document.createElement('option'); o.value = mname; o.textContent = modelLabel(mname); hm.append(o); }
   if (keepM) hm.value = keepM;
   // Sent commands and what happened to them.
   const results = Array.isArray(station.results) ? station.results : [];
@@ -3634,16 +3854,18 @@ function makeMission(skipIntro) {
   };
 }
 
+// The Lunar Post: a glass dome full of strange plants that live on the black
+// hole's light (its labs are dug into the planet beneath it; the Mac app
+// shows them). L = glowing pods, l = leaves, G = glass, g = the glass rim.
 const WAREHOUSE = [
-  '.......g.',
-  '.rrrrrrg.',
-  'rrrrrrrrr',
-  'wwwwwwwww',
-  'wlwwwwwlw',
-  'wwwddwwww',
-  'wwwddwwww',
+  '....ggggg....',
+  '..ggGGGhGgg..',
+  '.gGGGGGGhGGg.',
+  'gGGLlGGlLGlGg',
+  'glllLlllllLlg',
+  'fffffffffffff',
 ];
-const WAREHOUSE_COLORS = { r: '#3a3456', w: '#241f36', l: '#c98a3a', d: '#0d0b17', g: '#4b4f78' };
+const WAREHOUSE_COLORS = { g: '#3d5a80', G: '#101a2e', h: '#5a7aa8', l: '#2f6b4f', L: '#c98a3a', f: '#2b2640' };
 
 function drawOutpost() {
   // Kept dim on purpose: a dark silhouette with a faint rim of light, so it
@@ -3663,11 +3885,12 @@ function drawOutpost() {
       if (x * x + y * y <= cr * cr) px(o.x + cx + x, o.y + cy + y, (x + y > 0) ? '#1b1829' : '#0b0a14');
     }
   }
-  // The agent warehouse, on the planet's left shoulder. Its window glows; the
-  // light on its antenna blinks.
-  const bx = o.x - 19, by = Math.round(surfaceY(bx)) + 2;
-  sprite(WAREHOUSE, WAREHOUSE_COLORS, bx, by, 1);
-  if (Math.floor(performance.now() / 900) % 2) px(bx + 3, by - 8, '#ff4d5e');
+  // The Lunar Post, on the planet's left side. Its windows glow; the light on
+  // its antenna blinks; a few lit rooms show in the rock beneath it.
+  const bx = o.x - 14, by = Math.round(surfaceY(bx)) + 2;
+  const at = sprite(WAREHOUSE, WAREHOUSE_COLORS, bx, by, 1);
+  if (Math.floor(performance.now() / 1100) % 2) px(at.x0 + 8, at.y0 + 3, '#ffb347'); // a pod glows
+  for (const [dx, dy] of [[-2, 3], [1, 4], [3, 6]]) px(bx + dx, by + dy, '#5c3f1a');
 }
 
 function drawFlag(x, y, s, now, grow) {
@@ -3914,7 +4137,7 @@ const DEPOT = [
   '.wwwwdwwww.',
 ];
 const DEPOT_COLORS = { s: '#6fe08a', a: '#3fae6a', A: '#e6e6ff', w: '#2e2a48', l: '#ffe066', d: '#0d0b17' };
-const WAREHOUSE_BRIGHT = { r: '#4b4570', w: '#2e2a48', l: '#ffb347', d: '#0d0b17', g: '#6b708f' };
+const WAREHOUSE_BRIGHT = { g: '#7fb0e0', G: '#16243e', h: '#c8e4ff', l: '#3f8a62', L: '#ffb347', f: '#3a3456' };
 let bboxes = [];
 let surfCache = null; // the planet surface, redrawn only when the canvas size changes
 
@@ -3950,6 +4173,57 @@ function surfaceImage(sg) {
   return c;
 }
 
+/** The black hole, close and ominous: a dithered red glow that breathes, a
+ * shadow ringed with hot light, a tilted disk that slowly turns, light from
+ * the disk's far side bent over the top, and debris falling in.
+ * Kept the same here and in the other window. @param {number} tm @param {number} cx @param {number} cy @param {number} r @param {(x:number,y:number,c:string)=>void} P */
+function drawLooming(tm, cx, cy, r, P) {
+  const rx = r * 3, ry = r * 0.42, tilt = -0.14, spin = tm / 650;
+  const breathe = 0.5 + 0.5 * Math.sin(tm / 2600);
+  const HOT = ['#fff1c8', '#ffd27a', '#ffb347', '#ff9d3c'];
+  const WARM = ['#ff7a2a', '#e0571c', '#b8401a', '#ff7a2a'];
+  const hash = (x, y) => (((x * 73856093) ^ (y * 19349663)) >>> 0) % 100;
+  const ext = Math.ceil(r * 2.6);
+  for (let y = -ext; y <= ext; y++) {
+    for (let x = -Math.ceil(rx) - 2; x <= Math.ceil(rx) + 2; x++) {
+      const d = Math.hypot(x, y);
+      const yd = y - x * tilt;                      // height above the disk's plane
+      const e = (x * x) / (rx * rx) + (yd * yd) / (ry * ry);
+      const inDisk = e <= 1 && e >= 0.2;
+      const front = inDisk && yd > 0;               // the near half crosses in front
+      let c = null;
+      if (front) {
+        const k = Math.floor(Math.atan2(yd, x) * 4 + spin + e * 6) & 3;
+        c = e < 0.45 ? HOT[k] : e < 0.75 ? WARM[k] : (hash(x, y) < 55 ? '#7a1f1a' : null);
+      } else if (d < r) {
+        c = '#000000';
+      } else if (d < r + 1) {
+        c = (Math.floor(Math.atan2(y, x) * 8 + spin * 2) & 1) ? '#ffe2b0' : '#ff9d3c';
+      } else if (y < 0 && d < r + 3.2) {
+        // the far side of the disk, bent up over the top by gravity
+        const k = Math.floor(Math.atan2(y, x) * 5 - spin) & 3;
+        c = d < r + 2.2 ? HOT[k] : WARM[k];
+      } else if (inDisk) {
+        const k = Math.floor(Math.atan2(yd, x) * 4 + spin + e * 6) & 3;
+        c = e < 0.45 ? HOT[k] : e < 0.75 ? WARM[k] : (hash(x, y) < 55 ? '#7a1f1a' : null);
+      } else if (d < r * 2.6) {
+        // the glow: thinner the farther out, breathing slowly
+        const f = 1 - (d - r) / (r * 1.6);
+        if (hash(x, y) < f * (14 + 10 * breathe)) c = f > 0.5 ? '#5a1a12' : '#2e0d0b';
+      }
+      if (c) P(cx + x, cy + y, c);
+    }
+  }
+  // Debris spiralling in.
+  for (let i = 0; i < 6; i++) {
+    const life = (tm / 9000 + i / 6) % 1;
+    const rr = r * (1.1 + 1.9 * (1 - life));
+    const a = i * 2.1 + life * 7;
+    const x = Math.round(cx + Math.cos(a) * rr * 1.6), y = Math.round(cy + Math.sin(a) * rr * 0.5 + Math.cos(a) * rr * 1.6 * tilt);
+    if (Math.hypot(x - cx, y - cy) > r + 1) P(x, y, life > 0.7 ? '#ffd27a' : '#c2410c');
+  }
+}
+
 function drawOutpostView(tm, dt, since) {
   pos.clear();
   pv = null;
@@ -3962,13 +4236,9 @@ function drawOutpostView(tm, dt, since) {
   }
   ctx.globalAlpha = 1;
 
-  // The black hole, far off in the sky.
-  const hx = Math.round(W * 0.82), hy = Math.round(H * 0.22);
-  for (let i = -8; i <= 8; i++) if (Math.abs(i) > 4) px(hx + i, hy + (Math.abs(i) > 6 ? 1 : 0), i % 2 ? '#ff7a2a' : '#ffb347');
-  for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) {
-    const d = Math.hypot(x, y);
-    if (d < 3.5) px(hx + x, hy + y, '#000000'); else if (d < 4.5) px(hx + x, hy + y, '#ff9d3c');
-  }
+  // The black hole, looming over home base.
+  const hr = Math.max(10, Math.round(Math.min(W, H) * 0.13));
+  drawLooming(tm, Math.round(W * 0.8), Math.round(H * 0.08 + hr * 0.4), hr, px);
 
   const sg = surfaceGeom();
   ctx.drawImage(surfaceImage(sg), 0, 0);
@@ -3987,9 +4257,25 @@ function drawOutpostView(tm, dt, since) {
   };
 
   const desktop = !!window.__TAURI__;
-  const wh = building('warehouse', WAREHOUSE, WAREHOUSE_BRIGHT, 0.28, 'AI WAREHOUSE',
+  const wh = building('warehouse', WAREHOUSE, WAREHOUSE_BRIGHT, 0.28, 'LUNAR POST',
     desktop ? 'TAP TO ENTER' : 'IN THE MAC APP', desktop ? '#6fe08a' : '#4b4f78');
-  if (Math.floor(tm / 900) % 2) { ctx.fillStyle = '#ff4d5e'; ctx.fillRect(wh.x - wh.w / 2 + 7 * S3, wh.y - wh.h, S3, S3); } // antenna light
+  // A glint of black hole light on the glass, and pods that glow in turn.
+  for (const [c, r, k] of [[3, 3, 0], [8, 3, 1], [4, 4, 2], [10, 4, 3]]) {
+    ctx.fillStyle = (Math.floor(tm / 700) + k) % 4 === 0 ? '#ffe2b0' : '#ffb347';
+    ctx.fillRect(wh.x - wh.w / 2 + c * S3, wh.y - wh.h + r * S3, S3, S3);
+  }
+  // The staff's rooms, dug into the planet's side under the entrance: a lift
+  // shaft and a row of lit windows in the rock.
+  const ry = wh.y + 19;
+  ctx.fillStyle = '#0d0b17';
+  ctx.fillRect(wh.x - S3 * 8, ry, S3 * 16, S3 * 3);            // the hall
+  ctx.fillStyle = '#1d1a2e';
+  ctx.fillRect(wh.x - S3 * 8, ry + S3 * 3, S3 * 16, 1);         // its floor
+  for (let i = -3; i <= 3; i++) {
+    const lit = (Math.floor(tm / 1500) + i * 5) % 7 === 0;
+    ctx.fillStyle = lit ? '#c98a3a' : '#3a2a16';
+    ctx.fillRect(wh.x + i * S3 * 2 - Math.floor(S3 / 2), ry + S3, S3, S3);
+  }
 
   const left = (l) => state.shopping.filter((it) => it.list === l && !it.checked).length;
   const nl = left('need'), wl = left('want');
@@ -4202,7 +4488,7 @@ function hit(e) {
 // The warehouse opens in the desktop app; the web version explains where it is.
 function openWarehouse() {
   if (window.__TAURI__) location.href = 'warehouse.html';
-  else toast('This planet holds your agent warehouse. It opens in the Agent Station app on your Mac.', true);
+  else toast('This moon holds your Lunar Post. It opens in the Agent Station app on your Mac.', true);
 }
 canvas.addEventListener('click', (e) => {
   const h = hit(e);
