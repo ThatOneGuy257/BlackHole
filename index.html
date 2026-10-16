@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ljHEf4YpQjkL/Q2Gw0eB02OOO0z+Ry7XIlZSqDQybbA='; style-src 'sha256-fDRmAFV9TgDZ2131LV9k0gUviEYlIK7nkdTDD82gz0Q='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0aQTeQ7EJuRGFlnvA7948NpED+2J1LAWI8Ncsg6dYw0='; style-src 'sha256-fDRmAFV9TgDZ2131LV9k0gUviEYlIK7nkdTDD82gz0Q='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -3568,7 +3568,9 @@ function radiusFor(p, g) { return g.inner + (g.rMax - g.inner) * (1 - p); }
 
 function resize() {
   const r = canvas.parentElement.getBoundingClientRect();
-  const S = Math.max(2, Math.min(6, Math.floor(Math.min(r.width / 260, r.height / 170))));
+  // Pixel size: 2 or 3 screen pixels, never bigger. A bigger window shows
+  // more of space (and a bigger black hole), not chunkier pixels.
+  const S = Math.max(2, Math.min(3, Math.floor(Math.min(r.width / 260, r.height / 170))));
   W = Math.max(100, Math.floor(r.width / S));
   H = Math.max(80, Math.floor(r.height / S));
   canvas.width = W;
@@ -3580,7 +3582,9 @@ function resize() {
     x: Math.floor(rs() * W), y: Math.floor(rs() * H), ph: rs() * 6.3, sp: 0.5 + rs() * 2, big: rs() < 0.08,
   }));
   const g = geom(), rd = rand(11);
-  disk = Array.from({ length: 340 }, () => {
+  // Keep the disk as dense as at the usual size when the hole grows.
+  const many = Math.round(340 * Math.min(4, Math.max(1, (g.rH / 13) ** 2)));
+  disk = Array.from({ length: many }, () => {
     const r = g.rH * 1.25 + Math.pow(rd(), 1.6) * g.rH * 1.9;
     const k = (r - g.rH) / (g.rH * 2);
     return {
