@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0aQTeQ7EJuRGFlnvA7948NpED+2J1LAWI8Ncsg6dYw0='; style-src 'sha256-fDRmAFV9TgDZ2131LV9k0gUviEYlIK7nkdTDD82gz0Q='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4FZDonWUOlQLDkhJ3jsfLV4/LgTbHE4KDf3zNjHZ2zQ='; style-src 'sha256-fDRmAFV9TgDZ2131LV9k0gUviEYlIK7nkdTDD82gz0Q='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -791,6 +791,29 @@ html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); te
         <div class="row" role="radiogroup" aria-label="Look">
           <label class="check"><input type="radio" name="look" value="hud" id="look-hud"> HUD</label>
           <label class="check"><input type="radio" name="look" value="classic" id="look-classic"> Classic pixel</label>
+        </div>
+        <p class="sub">SPACE ON THIS DEVICE</p>
+        <div class="grid2 space-style">
+          <label>MIDDLE<select id="st-center">
+            <option value="classic">Black hole (original)</option>
+            <option value="ember">Ember (original, a little Gargantua)</option>
+            <option value="gargantua">Gargantua</option>
+            <option value="maelstrom">Maelstrom</option>
+            <option value="lens">Lens</option>
+            <option value="sun">Sun</option>
+          </select></label>
+          <label>PLANETS<select id="st-planets">
+            <option value="classic">Original</option>
+            <option value="lit">Lit by the middle</option>
+            <option value="ringed">Ringed gas giants</option>
+            <option value="flat">Flat with a shadow</option>
+          </select></label>
+          <label>LOOSE TASKS<select id="st-tasks">
+            <option value="classic">Original</option>
+            <option value="lit">Lit rocks</option>
+            <option value="comet">Comets (longer tail = more urgent)</option>
+            <option value="trail">Trails</option>
+          </select></label>
         </div>
         <p class="sub">ALERTS ON THIS DEVICE</p>
         <div class="row"><button type="button" id="alerts">ENABLE ALERTS</button></div>
@@ -3640,6 +3663,240 @@ function drawHole(g, tm) {
   }
 }
 
+// ---------------------------------------------------------------- space styles
+// What sits in the middle, and how planets, moons and loose tasks are drawn.
+// Picked under MORE and remembered on this device. Only the drawing changes:
+// distance from the middle still means urgency.
+const STYLE_KEY = 'blackhole.style';
+const STYLE_CHOICES = {
+  center: ['classic', 'ember', 'gargantua', 'maelstrom', 'lens', 'sun'],
+  planets: ['classic', 'lit', 'ringed', 'flat'],
+  tasks: ['classic', 'lit', 'comet', 'trail'],
+};
+function loadStyle() {
+  const st = { center: 'classic', planets: 'classic', tasks: 'classic' };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STYLE_KEY) || '{}');
+    for (const k of Object.keys(st)) if (STYLE_CHOICES[k].includes(saved[k])) st[k] = saved[k];
+  } catch (e) { /* the classic look */ }
+  return st;
+}
+let spaceStyle = loadStyle();
+function saveStyle() { try { localStorage.setItem(STYLE_KEY, JSON.stringify(spaceStyle)); } catch (e) { /* this visit only */ } }
+
+const shade = (a, b, k) => {
+  const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b);
+  return '#' + A.map((x, i) => Math.round(x + (B[i] - x) * k).toString(16).padStart(2, '0')).join('');
+};
+const hash2 = (x, y) => (((x * 73856093) ^ (y * 19349663)) >>> 0) % 100;
+/** A ball lit from the middle (lx, ly: unit vector toward the light). */
+function litBall(x, y, R, base, lx, ly, opt) {
+  const o = opt || {};
+  const lit = o.lit || shade(base, '#fff1c8', 0.35), dark = shade(base, '#05040b', 0.7);
+  for (let dy = -R; dy <= R; dy++) {
+    for (let dx = -R; dx <= R; dx++) {
+      const d2 = dx * dx + dy * dy;
+      if (d2 > R * R + R * 0.6) continue;
+      const nz = Math.sqrt(Math.max(0, R * R - d2)) / R;
+      const l = (dx / R) * lx + (dy / R) * ly + nz * 0.25;
+      let c = l > 0.55 ? lit : l > 0.05 ? base : l > -0.15 ? ((dx + dy) & 1 ? base : dark) : dark;
+      if (o.rim && d2 > (R - 1) * (R - 1) && l > 0.2) c = o.rim;
+      if (o.bands && l > -0.15 && Math.floor((dy + R) / 2) % 3 === 1) c = shade(c, '#05040b', 0.25);
+      px(x + dx, y + dy, c);
+    }
+  }
+}
+/** Unit vector from (x, y) toward the middle, and the distance. */
+function towardMiddle(g, x, y) { const dx = g.cx - x, dy = g.cy - y, d = Math.hypot(dx, dy) || 1; return [dx / d, dy / d, d]; }
+
+/** The middle of the orbit view. */
+function drawCenter(g, tm) {
+  const c = spaceStyle.center, R = g.rH;
+  if (c === 'gargantua') { drawLooming(tm, g.cx, g.cy, R, px); return; }
+  if (c === 'ember') {
+    // The original, with a little of Gargantua: a slow red glow, the disk
+    // tilted, and its far side bent up over the top of the hole.
+    const breathe = 0.5 + 0.5 * Math.sin(tm / 2600);
+    for (let y = -R * 2.4; y <= R * 2.4; y++) {
+      for (let x = -R * 2.4; x <= R * 2.4; x++) {
+        const d = Math.hypot(x, y);
+        if (d < R + 2.5 || d > R * 2.4) continue;
+        const f = 1 - (d - R) / (R * 1.4);
+        if (hash2(x | 0, y | 0) < f * (10 + 8 * breathe)) px(g.cx + x, g.cy + y, f > 0.5 ? '#4a1610' : '#260b09');
+      }
+    }
+    const tilted = (front) => {
+      for (const d of disk) {
+        const a = d.a + (tm / 1000) * d.sp, sn = Math.sin(a);
+        if ((sn > 0) !== front) continue;
+        px(g.cx + Math.cos(a) * d.r, g.cy + sn * d.r * 0.26 - Math.cos(a) * d.r * 0.14, d.c);
+      }
+    };
+    tilted(false);
+    drawHole(g, tm);
+    const spin = tm / 650;
+    for (let y = -R - 4; y < 0; y++) {
+      for (let x = -R - 4; x <= R + 4; x++) {
+        const d = Math.hypot(x, y);
+        if (d < R + 1.6 || d > R + 3.4) continue;
+        const k = Math.floor(Math.atan2(y, x) * 5 - spin) & 3;
+        px(g.cx + x, g.cy + y, d < R + 2.5 ? ['#fff1c8', '#ffd27a', '#ffb347', '#ff9d3c'][k] : ['#ff7a2a', '#e0571c', '#b8401a', '#ff7a2a'][k]);
+      }
+    }
+    tilted(true);
+    // A thin bright band where the disk's near side crosses in front.
+    const reach = Math.round(R * 2.7);
+    for (let x = -reach; x <= reach; x++) {
+      const f = Math.abs(x) / reach;
+      if (f > 0.55 && hash2(x, 3) > (1 - f) * 220) continue;
+      const k = Math.floor(x * 0.5 + tm / 160) & 3;
+      const y = Math.round(R * 0.18 - x * 0.14);
+      px(g.cx + x, g.cy + y, f < 0.45 ? ['#fff1c8', '#ffd27a', '#ffb347', '#ffd27a'][k] : f < 0.75 ? ['#ff9d3c', '#ff7a2a', '#e0571c', '#ff7a2a'][k] : '#a8341f');
+      if (f < 0.4 && (x & 1)) px(g.cx + x, g.cy + y + 1, '#ff9d3c');
+    }
+    return;
+  }
+  if (c === 'maelstrom') {
+    const spin = tm / 1400;
+    for (let arm = 0; arm < 3; arm++) {
+      for (let i = 0; i < 260; i++) {
+        const k = i / 260;
+        const rr = R * (1.05 + 2.4 * (1 - k));
+        const a = arm * 2.094 + spin + k * 5.5 + (hash2(i, arm) / 100) * 0.35;
+        if (hash2(i, arm + 7) > 70 + k * 25) continue;
+        px(g.cx + Math.cos(a) * rr, g.cy + Math.sin(a) * rr * 0.62, k > 0.8 ? '#fff1c8' : k > 0.55 ? '#ffb347' : k > 0.3 ? '#ff7a2a' : '#7a1f1a');
+      }
+    }
+    for (let y = -R - 1; y <= R + 1; y++) {
+      for (let x = -R - 1; x <= R + 1; x++) {
+        const d = Math.hypot(x, y * 1.12);
+        if (d < R - 0.5) px(g.cx + x, g.cy + y, '#000000');
+        else if (d < R + 0.6) px(g.cx + x, g.cy + y, (Math.floor(Math.atan2(y, x) * 6 - spin * 3) & 1) ? '#fff0c0' : '#ff9d3c');
+      }
+    }
+    return;
+  }
+  if (c === 'lens') {
+    for (let y = -R - 2; y <= R + 2; y++) {
+      for (let x = -R - 2; x <= R + 2; x++) {
+        const d = Math.hypot(x, y);
+        if (d < R - 0.5) px(g.cx + x, g.cy + y, '#000000');
+        else if (d < R + 0.5) {
+          const b = 0.5 + 0.5 * Math.cos(Math.atan2(y, x) - tm / 900);
+          px(g.cx + x, g.cy + y, b > 0.6 ? '#ffffff' : b > 0.25 ? '#ffe2b0' : '#c98a4a');
+        }
+      }
+    }
+    return;
+  }
+  if (c === 'sun') {
+    // A pixel sun: hot core, darker edge, flares that flicker around it.
+    const flick = tm / 180;
+    for (let y = -R * 2.2; y <= R * 2.2; y++) {
+      for (let x = -R * 2.2; x <= R * 2.2; x++) {
+        const d = Math.hypot(x, y);
+        if (d <= R) {
+          const k = d / R;
+          let col = k < 0.45 ? '#fffbe6' : k < 0.7 ? '#ffe680' : k < 0.88 ? '#ffc14a' : '#ff9d2e';
+          if (k > 0.5 && hash2((x + Math.floor(tm / 400)) | 0, y | 0) < 6) col = '#e07a1f'; // churning surface
+          px(g.cx + x, g.cy + y, col);
+        } else {
+          const a = Math.atan2(y, x);
+          const ray = 0.5 + 0.5 * Math.sin(a * 9 + flick * 0.3) * Math.sin(a * 4 - flick * 0.17);
+          const reach = R * (1.25 + 0.7 * ray);
+          if (d < reach && hash2(x | 0, y | 0) < (1 - (d - R) / (reach - R + 0.01)) * 70) px(g.cx + x, g.cy + y, d < R * 1.3 ? '#ffb347' : d < R * 1.6 ? '#ff7a2a' : '#8a2f14');
+        }
+      }
+    }
+    return;
+  }
+  drawDisk(g, tm, false);
+  drawHole(g, tm);
+  drawDisk(g, tm, true);
+}
+
+/** A loose task. r, a: its orbit (for the trail). */
+function drawTaskBody(g, x, y, c, hi, r, a, p) {
+  const t = spaceStyle.tasks;
+  if (t === 'lit') {
+    const [lx, ly] = towardMiddle(g, x, y);
+    litBall(x, y, 2, c, lx, ly, { lit: '#fff1c8' });
+  } else if (t === 'comet') {
+    const [lx, ly] = towardMiddle(g, x, y), len = 3 + Math.round(p * 12);
+    for (let i = 1; i <= len; i++) {
+      if (i > 3 && hash2(i, x) > 100 - (i / len) * 70 + 20) continue;
+      px(x - lx * i, y - ly * i, i < 3 ? '#ffffff' : i < len * 0.5 ? c : '#3a3f6a');
+    }
+    ctx.fillStyle = c; ctx.fillRect(x - 1, y - 1, 3, 3); px(x, y, '#ffffff');
+  } else if (t === 'trail') {
+    for (let i = 1; i < 14; i++) {
+      if (i > 6 && i % 2) continue;
+      const aa = a - i * (5 / Math.max(20, r));
+      ctx.globalAlpha = 1 - i / 14;
+      px(g.cx + Math.cos(aa) * r, g.cy + Math.sin(aa) * r, c);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = c; ctx.fillRect(x - 1, y - 1, 3, 3);
+  } else {
+    planet(x, y, c, false);
+  }
+  if (hi) brackets(x, y, 4);
+}
+
+function drawMoonBody(g, x, y, c, hi) {
+  const st = spaceStyle.planets;
+  if (st === 'lit') { const [lx, ly] = towardMiddle(g, x, y); litBall(x, y, 1, c, lx, ly, { lit: '#fff1c8' }); }
+  else if (st === 'ringed') { ctx.fillStyle = c; ctx.fillRect(x, y, 2, 2); }
+  else if (st === 'flat') { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); px(x + 1, y, c); }
+  else { moon(x, y, c, false); }
+  if (hi) brackets(x, y, 3);
+}
+
+function drawGroupBody(g, x, y, c, hi, front) {
+  const st = spaceStyle.planets;
+  if (st === 'lit') {
+    const [lx, ly, d] = towardMiddle(g, x, y);
+    litBall(x, y, 5, c, lx, ly, { rim: d < g.rMax * 0.6 ? '#ffb347' : '#ffd27a' });
+  } else if (st === 'ringed') {
+    const ring = (fr) => {
+      for (let i = 0; i < 48; i++) {
+        const a = (i / 48) * Math.PI * 2;
+        if ((Math.sin(a) > 0) !== fr) continue;
+        px(x + Math.cos(a) * 8, y + Math.sin(a) * 2.2 - Math.cos(a) * 1.2, fr ? shade(c, '#ffffff', 0.4) : shade(c, '#05040b', 0.5));
+      }
+    };
+    if (front === 'back') { ring(false); return; }
+    if (front === 'front') { ring(true); return; }
+    ring(false);
+    litBall(x, y, 4, c, -0.7, -0.7, { bands: true });
+    ring(true);
+  } else if (st === 'flat') {
+    const [lx, ly] = towardMiddle(g, x, y);
+    for (let dy = -4; dy <= 4; dy++) {
+      for (let dx = -4; dx <= 4; dx++) {
+        if (dx * dx + dy * dy > 17) continue;
+        px(x + dx, y + dy, -(dx * lx + dy * ly) > 1.5 ? shade(c, '#05040b', 0.65) : c);
+      }
+    }
+  } else {
+    groupPlanet(x, y, c, false);
+  }
+  if (hi) brackets(x, y, st === 'ringed' ? 9 : 6);
+}
+
+// Space styles: three pickers under MORE.
+for (const [k, id] of [['center', '#st-center'], ['planets', '#st-planets'], ['tasks', '#st-tasks']]) {
+  const sel = $(id);
+  if (!sel) continue;
+  sel.value = spaceStyle[k];
+  sel.addEventListener('change', () => {
+    if (!STYLE_CHOICES[k].includes(sel.value)) return;
+    spaceStyle[k] = sel.value;
+    saveStyle();
+  });
+}
+
 function brackets(x, y, d) {
   for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
     px(x + sx * d, y + sy * d, '#ffffff');
@@ -3788,7 +4045,7 @@ function drawScene(g, tm, dt) {
     const x = Math.round(g.cx + Math.cos(a) * r), y = Math.round(g.cy + Math.sin(a) * r);
     place('t:' + t.id, 'task', t.id, x, y, g);
     const focus = isSel('task', t.id) || isHov('task', t.id);
-    planet(x, y, blinkOn(p) ? '#ffffff' : pullColor(p), focus);
+    drawTaskBody(g, x, y, blinkOn(p) ? '#ffffff' : pullColor(p), focus, r, a, p);
     labels.push({ key: 'o:t:' + t.id, text: trunc(t.title.toUpperCase(), focus ? 30 : 12), x, y, c: focus ? '#ffffff' : '#7d84b8', rank: focus ? 3 : 1 });
   }
 
@@ -3822,14 +4079,14 @@ function drawScene(g, tm, dt) {
     const drawMoon = (m) => {
       if (m.s > 0.12) dottedLine(x, y, m.x, m.y, '#5a3040', 2);
       const focus = isSel('task', m.t.id) || isHov('task', m.t.id);
-      moon(m.x, m.y, blinkOn(m.mp) ? '#ffffff' : pullColor(m.mp), focus);
+      drawMoonBody(g, m.x, m.y, blinkOn(m.mp) ? '#ffffff' : pullColor(m.mp), focus);
       place('t:' + m.t.id, 'task', m.t.id, m.x, m.y, g);
       if (focus || gFocus || kidFocus || m.s > 0.5) {
         labels.push({ key: 'o:m:' + m.t.id, text: trunc(m.t.title.toUpperCase(), focus ? 30 : 14), x: m.x, y: m.y, c: focus ? '#ffffff' : '#9aa0d0', rank: focus ? 3 : 2 });
       }
     };
     moons.filter((m) => m.back).forEach(drawMoon);
-    groupPlanet(x, y, grp.color, gFocus);
+    drawGroupBody(g, x, y, grp.color, gFocus);
     moons.filter((m) => !m.back).forEach(drawMoon);
     labels.push({ key: 'o:g:' + grp.id, text: trunc(grp.name.toUpperCase(), gFocus ? 30 : 14), x, y, c: gFocus ? '#ffffff' : grp.color, rank: gFocus ? 3 : 2.5, pad: 6 });
   }
@@ -3841,7 +4098,7 @@ function drawScene(g, tm, dt) {
   // Labels also stay off every sprite and off the EVENT HORIZON caption.
   const placed = [{ x: g.cx - 26, y: g.cy + g.inner + 2, w: 52, h: 7 }], drawn = [];
   for (const q of pos.values()) {
-    const rad = q.type === 'group' ? 4 : 2;
+    const rad = q.type === 'group' ? (spaceStyle.planets === 'ringed' ? 8 : 4) : 2;
     placed.push({ x: q.x - rad, y: q.y - rad, w: rad * 2 + 1, h: rad * 2 + 1 });
   }
   const overlaps = (b) => placed.some((q) => b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h);
@@ -4584,21 +4841,32 @@ function drawOrbit(tm, dt) {
   bboxes = [];
   ctx.fillStyle = '#05040b';
   ctx.fillRect(0, 0, W, H);
+  const g = geom();
+  const lensed = spaceStyle.center === 'lens', sun = spaceStyle.center === 'sun';
+  // The lens bends starlight around the hole: each star shows pushed out
+  // and stretched into a short arc.
+  const E = g.rH * 2.2;
   for (const s of stars) {
     ctx.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin((tm / 1000) * s.sp + s.ph));
-    px(s.x, s.y, s.big ? '#ffffff' : '#8a90c4');
+    const col = s.big ? '#ffffff' : '#8a90c4';
+    if (!lensed) { px(s.x, s.y, col); continue; }
+    const dx = s.x - g.cx, dy = s.y - g.cy, d = Math.hypot(dx, dy) || 1;
+    const nd = (d + Math.sqrt(d * d + 4 * E * E)) / 2, a = Math.atan2(dy, dx);
+    const stretch = Math.min(6, ((E * E) / (d * d)) * 3);
+    for (let k = -stretch; k <= stretch; k += 0.6) px(g.cx + Math.cos(a + k / nd) * nd, g.cy + Math.sin(a + k / nd) * nd, col);
   }
   ctx.globalAlpha = 1;
-  const g = geom();
-  dottedRing(g.cx, g.cy, radiusFor(0, g), '#1f2447', 5);
-  dottedRing(g.cx, g.cy, radiusFor(0.5, g), '#1a1e3c', 5);
-  dottedRing(g.cx, g.cy, g.inner, '#6b2632', 3);
-  const label = 'EVENT HORIZON';
-  drawText(label, g.cx - Math.floor(textWidth(label) / 2), g.cy + g.inner + 3, '#6b2632');
+  if (lensed) {
+    for (const p of [0, 0.5]) { const r = radiusFor(p, g), n = Math.floor(r * 6.3); for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; px(g.cx + Math.cos(a) * r, g.cy + Math.sin(a) * r, '#11142a'); } }
+  } else {
+    dottedRing(g.cx, g.cy, radiusFor(0, g), '#1f2447', 5);
+    dottedRing(g.cx, g.cy, radiusFor(0.5, g), '#1a1e3c', 5);
+    dottedRing(g.cx, g.cy, g.inner, sun ? '#6b4a1a' : '#6b2632', 3);
+  }
+  const label = sun ? 'CORONA' : 'EVENT HORIZON';
+  drawText(label, g.cx - Math.floor(textWidth(label) / 2), g.cy + g.inner + 3, sun ? '#8a5a1f' : lensed ? '#3a2230' : '#6b2632');
   drawOutpost();
-  drawDisk(g, tm, false);
-  drawHole(g, tm);
-  drawDisk(g, tm, true);
+  drawCenter(g, tm);
   drawScene(g, tm, dt);
   drawAnims(g, tm);
   drawCrew();
