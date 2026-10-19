@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qNkgSKlpzZFhTCA1L22MXNbMixV4mq93ELo4KbusVvQ='; style-src 'sha256-pUn3vmNblrWNHurC2wp0EF2IF2ymXfxOsuegB3O6Mw4='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vREzXekh7ACgIjl/hnfZ5q2muUyrfj9hPSOI9zFLbb8='; style-src 'sha256-pUn3vmNblrWNHurC2wp0EF2IF2ymXfxOsuegB3O6Mw4='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -1450,7 +1450,7 @@ function fillList(ul, rows) {
       const title = document.createElement('span'); title.className = 't-title';
       const meta = document.createElement('span'); meta.className = 't-meta';
       b.append(dot, title, meta);
-      b.addEventListener('click', () => select(r.type, r.id));
+      b.addEventListener('click', () => { select(r.type, r.id); if (railApi && railApi.isOpen()) railApi.open('tasks', 2); });
       li.append(b);
       ul.append(li);
     }
@@ -1587,7 +1587,6 @@ function select(type, id) {
   if (sel) {
     const panel = sel.type === 'task' ? $('#detail') : $('#gdetail');
     reveal(panel, { block: 'nearest', behavior: 'smooth' });
-    if (railApi) railApi.open('tasks');
   }
   if (sel && sel.type === 'group') zoomTo(sel.id);
   if (closingGroup) zoomOut();
@@ -5198,6 +5197,7 @@ canvas.addEventListener('click', (e) => {
     if (!h || h.type === 'zoomout') { zoomOut(); return; }
     if (h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); return; }
     if (h.type === 'building') { if (h.id === 'depot') enterDepot(); else openWarehouse(); return; }
+    if (h.type === 'task' && railApi) { taskCard(h.id, e); return; }
     select(h.type, h.id);
     return;
   }
@@ -5215,10 +5215,10 @@ function taskCard(id, e) {
   const at = Date.now(), steps = (t.checklist || []);
   const lines = [(g ? g.name + ' · ' : '') + dueText(t, at)];
   if (t.status === 'orbit') lines.push('Pull ' + pct(pullOf(t, at)) + (steps.length ? ' · ' + steps.filter((x) => x.done).length + ' of ' + steps.length + ' steps done' : ''));
-  const acts = [{ label: 'OPEN', primary: true, run: () => { if (!isSel('task', id)) select('task', id); else railApi.open('tasks', 2); } }];
+  const acts = [{ label: 'OPEN', primary: true, run: () => { if (!isSel('task', id)) select('task', id); railApi.open('tasks', 2); } }];
   if (t.status === 'orbit') {
     acts.push({ label: 'CHECK IN', run: () => { checkIn(t); save(); renderLists(); updateStats(); toast('Checked in on "' + t.title + '".', true); } });
-    acts.push({ label: 'COMPLETE', run: () => { if (!isSel('task', id)) select('task', id); $('#d-complete').click(); } });
+    acts.push({ label: 'COMPLETE', run: () => { if (!isSel('task', id)) select('task', id); $('#d-complete').click(); select(null); } });
   }
   railApi.card({ x: e.clientX, y: e.clientY, title: t.title, color: g ? g.color : pullColor(pullOf(t, at)), lines, actions: acts });
 }
@@ -5691,8 +5691,9 @@ function makeSplit(cfg) {
   }
 
   // ------------------------------------------------------------ watching the panels
-  // Something the page opens on its own (a task, an agent, a file) brings the
-  // menu up at its section, on its page.
+  // The menu only ever opens when you ask for it (MENU, a section, or OPEN on a
+  // card). Panels showing or hiding on their own never open it or switch its
+  // section; while it's open they only move a phone between list and page.
   let queued = false;
   const later = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; apply(); }); } };
   new MutationObserver((list) => {
@@ -5705,15 +5706,9 @@ function makeSplit(cfg) {
       relevant = true;
       if (t.hidden) continue;
       const box = t.closest('.sp-box');
-      if (!box || !(box instanceof HTMLElement) || !box.dataset.sec) continue;
+      if (!box || !(box instanceof HTMLElement) || box.dataset.sec !== current) continue;
       const b = boxes.get(box.dataset.sec);
-      if (!b) continue;
-      const isReadPart = (b.sec.read || []).includes(t);
-      if (!isReadPart) continue;
-      if ((b.sec.place || 'main') !== place) { place = b.sec.place || 'main'; if (cfg.onPlace) cfg.onPlace(place); }
-      current = b.sec.id;
-      isOpen = true;
-      level = 2;
+      if (b && isOpen && (b.sec.read || []).includes(t)) level = 2;
     }
     if (relevant) later();
   }).observe(root, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
