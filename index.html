@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4FZDonWUOlQLDkhJ3jsfLV4/LgTbHE4KDf3zNjHZ2zQ='; style-src 'sha256-fDRmAFV9TgDZ2131LV9k0gUviEYlIK7nkdTDD82gz0Q='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qNkgSKlpzZFhTCA1L22MXNbMixV4mq93ELo4KbusVvQ='; style-src 'sha256-pUn3vmNblrWNHurC2wp0EF2IF2ymXfxOsuegB3O6Mw4='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -321,44 +321,6 @@ button.mini { padding: 5px 10px; box-shadow: none; }
   #away.sr-out .sr-paper { transition: none; transform: none; }
 }
 
-/* The pop-out menu (wide windows only): a rail of tabs on the right; each tab
-   slides out a panel over the scene with just its own sections. */
-.rail, .rail-head { display: none; }
-@media (min-width: 821px) {
-  body.railed main { grid-template-columns: 1fr 76px; }
-  body.railed .rail {
-    display: flex; flex-direction: column; gap: 6px; grid-column: 2; grid-row: 1;
-    padding: 12px 8px; background: var(--bg); border-left: 2px solid var(--edge); overflow-y: auto;
-  }
-  .rail-tab { width: 100%; padding: 10px 2px; font-size: 10px; letter-spacing: 1px; box-shadow: none; }
-  .rail-tab.on { background: #3a2410; border-color: var(--orange); color: #ffd9b0; }
-  /* The window never scrolls sideways, whatever opens. */
-  body.railed { overflow: hidden; }
-  body.railed main { overflow: clip; }
-  body.railed aside {
-    position: absolute; top: 0; bottom: 0; right: 76px; z-index: 20;
-    width: var(--side, 380px); max-width: calc(100% - 140px);
-    background: var(--bg); border-left: 2px solid var(--edge); box-shadow: -14px 0 30px rgba(0, 0, 0, .55);
-    /* closed: faded and nudged right, still inside the window */
-    opacity: 0; transform: translate3d(14px, 0, 0); visibility: hidden; pointer-events: none;
-    will-change: opacity, transform; contain: layout paint; backface-visibility: hidden;
-    transition: opacity .14s ease-out, transform .14s ease-out, visibility 0s linear .14s;
-  }
-  body.railed aside.out {
-    opacity: 1; transform: none; visibility: visible; pointer-events: auto;
-    transition: opacity .14s ease-out, transform .14s ease-out, visibility 0s;
-  }
-  body.railed aside [data-tab].off { display: none !important; }
-  body.railed .rail-head {
-    display: flex; justify-content: space-between; align-items: center; gap: 8px;
-    font-size: 12px; letter-spacing: 2px; color: var(--orange); font-weight: bold; padding: 0 2px;
-  }
-  body.railed .side-grip { right: calc(76px + var(--side, 380px) - 5px); z-index: 21; }
-  body.railed:not(.rail-open) .side-grip { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  body.railed aside, body.railed aside.out { transition: none; }
-}
 .tm-len { margin-top: 4px; }
 .tm-presets { margin: 0 0 8px; }
 .tm-presets button { flex: 0 0 auto; }
@@ -516,12 +478,165 @@ html:not([data-theme=classic]) .sub { color: var(--quiet); }
 html:not([data-theme=classic]) .fold-toggle .chev { font-size: 0; width: 12px; text-align: center; }
 html:not([data-theme=classic]) .fold-toggle .chev::before { content: "\25BE"; font-size: 13px; }
 
-/* The pop-out menu in the HUD look. */
-html:not([data-theme=classic]) body.railed .rail { border-left: 0; background: var(--bg); box-shadow: inset 2px 0 0 var(--edge); }
-html:not([data-theme=classic]) .rail-tab { clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
-html:not([data-theme=classic]) .rail-tab.on { background: var(--orange); border-color: var(--orange); color: #1c0d00; }
-html:not([data-theme=classic]) body.railed aside { background: rgba(3, 6, 13, .97); border-left: 0; box-shadow: inset 2px 0 0 var(--edge), -18px 0 40px rgba(0, 0, 0, .6); }
-html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); text-shadow: 0 0 8px rgba(255, 169, 77, .45); padding-bottom: 6px; border-bottom: 1px dashed var(--edge); }
+/* ============================================================ readable text
+   Words you read (notes, chats, results, help) are set in the system's
+   reading font; the pixel/mono face stays for headings, labels and buttons. */
+:root { --read: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+body { font: 15px/1.5 var(--read); }
+input, textarea, select { font: 15px/1.4 var(--read); }
+label, legend, .sub, summary, h1, h2, h3, .count, .badge, .t-phase, .t-time, .t-mini, .t-round, .navbtn, .days label, .st-days label { font-family: var(--font); }
+.fine, .help, .msg, .empty, .stats, label.check, .steps label, .item-body, .item-name, .confirm p, .t-title, .t-meta,
+.inbox .ib-title, .inbox .ib-meta, .inbox .ib-text, .station .st-chat li, .chat li, .shelf .n-name, .shelf .n-meta, .log li, .trail li, .warn {
+  font-family: var(--read); letter-spacing: 0;
+}
+.fine { font-size: 13px; line-height: 1.5; }
+.t-title, .inbox .ib-title, .shelf .n-name, .item-name { font-size: 15px; }
+.t-meta, .inbox .ib-meta, .shelf .n-meta, .item-meta { font-size: 13px; }
+label.check, .steps label { font-size: 15px; }
+.inbox .ib-text, .chat li, .station .st-chat li, .reading { font-size: 16px; line-height: 1.6; }
+.log li { font-size: 13px; }
+
+/* ============================================================ the split menu
+   Sections | list | reading pane, over the scene; the scene waits in the
+   corner. Phones get one column at a time. */
+body.split-on main { grid-template-columns: minmax(0, 1fr); }
+body.split-on aside { display: none !important; }
+body.split-on .side-grip { display: none !important; }
+.sp-menu { margin-left: auto; }
+.bar .sp-menu { align-self: center; }
+.split {
+  position: absolute; inset: 0; z-index: 30; display: grid;
+  grid-template-columns: 210px var(--sp-list, 340px) 6px minmax(0, 1fr);
+  background: var(--bg); transition: opacity .14s ease-out, transform .14s ease-out;
+}
+.split.flat { grid-template-columns: 210px minmax(0, 1fr); }
+.split.flat .sp-list, .split.flat .sp-grip { display: none; }
+.split.closed { opacity: 0; transform: translate3d(0, 10px, 0); visibility: hidden; pointer-events: none; transition: opacity .14s, transform .14s, visibility 0s .14s; }
+.sp-side { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding: 10px 8px 14px; border-right: 2px solid var(--edge); background: rgba(0, 0, 0, .25); }
+html .split .sp-thumb { clip-path: none; border: 2px solid var(--edge); }
+html .split .sp-thumb:hover { border-color: var(--cyan); }
+.sp-thumb { position: relative; flex: none; height: 92px; padding: 0; overflow: hidden; background: #05040b; box-shadow: none; }
+.sp-thumb canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.sp-thumb span { position: absolute; left: 6px; bottom: 5px; font-size: 10px; letter-spacing: 1px; padding: 2px 5px; background: rgba(5, 4, 11, .8); color: var(--ink); }
+.sp-secs { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+html .split .sp-sec { clip-path: none; }
+html .split .sp-sec, html .split .sp-sec:hover { color: var(--ink); }
+html .split .sp-sec { width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 9px 10px; box-shadow: none; background: none; border: 0; border-left: 3px solid transparent; font-weight: normal; }
+html .split .sp-sec:hover { background: rgba(255, 255, 255, .04); }
+html .split .sp-sec[aria-current="true"] { border-left-color: var(--orange); background: rgba(255, 169, 77, .08); }
+html .split .sp-sec.go { margin-top: 8px; border-top: 1px dashed var(--edge); }
+.sp-sec-name { font: bold 12px var(--font); letter-spacing: 1.5px; color: var(--ink); }
+.sp-sec-blurb { grid-column: 1 / -1; font: 13px/1.35 var(--read); color: var(--quiet); letter-spacing: 0; }
+.sp-badge { font: 11px var(--font); padding: 2px 6px; border: 1px solid var(--edge); color: var(--quiet); }
+.sp-badge.hot { border-color: var(--orange); color: var(--orange); }
+.sp-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.sp-list { border-right: 2px solid var(--edge); }
+.sp-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 16px; min-height: 48px; border-bottom: 2px solid var(--edge); }
+.sp-title { margin: 0; flex: 1; min-width: 0; font: bold 13px var(--font); letter-spacing: 2px; color: var(--orange); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-tools { display: flex; gap: 6px; }
+.sp-tools button { padding: 5px 10px; font-size: 11px; }
+.sp-up { display: none; padding: 4px 10px; font-size: 16px; line-height: 1; }
+.sp-read-head { display: none; }
+.sp-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
+.sp-read .sp-scroll { padding: 20px 26px 30px; }
+.sp-read .sp-box > * { max-width: 760px; }
+.sp-box { display: flex; flex-direction: column; gap: 14px; }
+.sp-empty { margin: 40px 0 0; color: var(--quiet); font: 15px var(--read); }
+.sp-grip { cursor: col-resize; position: relative; touch-action: none; }
+.sp-grip::after { content: ""; position: absolute; top: 50%; left: 1px; width: 4px; height: 40px; margin-top: -20px; background: var(--edge); }
+.sp-grip:hover::after, .sp-grip.drag::after, .sp-grip:focus-visible::after { background: var(--orange); }
+.sp-grip:focus-visible { outline: none; }
+.split .detail-head .close, .split .fold-head { display: none !important; }
+#split #tm-body, #split #orbit-body, #split #inbox-body, #split #station-body { display: block !important; }
+#split details.whole > summary { display: none; }
+/* Inside the split, sections lose their boxes: the columns are the boxes. */
+html .split .panel, html .split .panel.detail, html .split .panel:not(.detail):not(.running) {
+  background: none; border: 0; box-shadow: none; padding: 0; margin: 0;
+}
+html .split .panel + .panel { border-top: 1px dashed var(--edge); padding-top: 14px; }
+.split .detail-head { margin-bottom: 4px; }
+.split .detail-head h2 { font-size: 18px; letter-spacing: 1px; }
+.reading { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 70ch; }
+
+/* The quick card next to something clicked in the scene. */
+.sp-card { position: absolute; z-index: 40; width: 290px; max-width: calc(100% - 16px); padding: 12px 14px; background: var(--panel); border: 2px solid var(--orange); box-shadow: 0 16px 40px rgba(0, 0, 0, .6); display: grid; gap: 8px; }
+.sp-card-head { display: flex; align-items: center; gap: 8px; }
+.sp-card-head strong { flex: 1; min-width: 0; font: bold 16px/1.3 var(--read); overflow-wrap: anywhere; }
+.sp-dot { width: 10px; height: 10px; flex: none; }
+.sp-card-x { padding: 0 8px; box-shadow: none; border: 0; background: none; color: var(--quiet); font-size: 18px; clip-path: none !important; }
+.sp-card-line { margin: 0; font: 14px/1.45 var(--read); color: var(--quiet); }
+.sp-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.sp-card-actions button { flex: 1 1 auto; padding: 7px 10px; font-size: 11px; }
+
+@media (max-width: 820px) {
+  body.split-on .space-wrap { height: calc(100svh - 56px); min-height: 360px; }
+  .split { position: fixed; inset: 0; z-index: 50; grid-template-columns: minmax(0, 1fr) !important; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .split .sp-side, .split .sp-list, .split .sp-read, .split .sp-grip { display: none; }
+  .split[data-level="0"] .sp-side { display: flex; }
+  .split[data-level="1"] .sp-list { display: flex; }
+  .split[data-level="2"] .sp-read { display: flex; }
+  .split .sp-list { border-right: 0; }
+  .sp-up { display: inline-block; }
+  .sp-read-head { display: flex; }
+  .sp-thumb { height: 120px; }
+  .sp-read .sp-scroll { padding: 16px 16px 28px; }
+  .sp-card { position: fixed; left: 12px !important; right: 12px; width: auto; top: auto !important; bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .split, .split.closed { transition: none; } }
+
+/* ============================================================ the Supply Depot's money pages */
+.money { display: flex; flex-direction: column; gap: 10px; }
+.money .sub { margin: 10px 0 0; }
+.mn-month { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mn-month strong { font: bold 15px var(--read); min-width: 9em; text-align: center; }
+.mn-month button { flex: none; }
+.mn-big { display: flex; flex-wrap: wrap; gap: 14px 32px; align-items: flex-end; }
+.mn-big > div { display: flex; flex-direction: column; gap: 2px; }
+.mn-k { font: 11px var(--font); letter-spacing: 1.5px; color: var(--quiet); }
+.mn-v { font: bold 30px/1.1 var(--read); color: var(--ink); font-variant-numeric: tabular-nums; }
+.mn-v.bad { color: var(--red); }
+.mn-of { font: 14px var(--read); color: var(--quiet); }
+.mn-bar { height: 10px; background: rgba(255, 255, 255, .06); position: relative; overflow: hidden; }
+.mn-bar i { position: absolute; inset: 0 auto 0 0; background: var(--green); }
+.mn-bar.over i { background: var(--red); }
+.mn-tips { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; font: 15px/1.45 var(--read); }
+.mn-tips li { padding-left: 12px; border-left: 2px solid var(--edge); }
+.mn-tips li.bad { border-left-color: var(--red); color: #ffb3bc; }
+.mn-tips li.good { border-left-color: var(--green); }
+.mn-cats, .mn-top { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.mn-cats li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.mn-cats li .mn-bar { grid-column: 1 / -1; height: 6px; }
+.mn-cat-name { font: 15px var(--read); display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mn-cat-amt, .mn-amt { font: 15px var(--read); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mn-cat-amt.good { color: var(--green); }
+.mn-dot { width: 10px; height: 10px; flex: none; display: inline-block; }
+.mn-top li { display: flex; gap: 10px; align-items: center; justify-content: space-between; font: 15px var(--read); }
+.mn-top li > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.mn-row { display: flex; justify-content: space-between; gap: 10px; }
+.mn-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.t-meta.bad, td.bad { color: var(--red); }
+td.good { color: var(--green); }
+.mn-inc input:first-child { flex: 0 0 7em; }
+.mn-set { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+.mn-paid { margin: 0; font: 15px var(--read); }
+.mn-paid.good { color: var(--green); }
+.mn-table-wrap { overflow-x: auto; }
+.mn-table { border-collapse: collapse; width: 100%; font: 14px var(--read); font-variant-numeric: tabular-nums; }
+.mn-table th, .mn-table td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--edge); white-space: nowrap; }
+.mn-table thead th { font: 11px var(--font); letter-spacing: 1px; color: var(--quiet); }
+.mn-table tr.now th button { color: var(--orange); }
+button.linkish { all: unset; cursor: pointer; color: var(--cyan); font: 14px var(--read); }
+button.linkish:hover { text-decoration: underline; }
+button.linkish:focus-visible { outline: 2px solid var(--orange); }
+.mn-cat-edit { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mn-cat-edit li { display: grid; grid-template-columns: 10px minmax(0, 1fr) 7.5em auto; gap: 8px; align-items: center; }
+.mn-cat-edit input { margin: 0; }
+.mn-private { border-left: 2px solid var(--green); padding-left: 10px; color: var(--ink) !important; }
+.mn-sync { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 820px) {
+  .bar .sp-menu { order: 2; }
+  .bar .hint { order: 3; flex-basis: 100%; }
+}
 </style>
 </head>
 <body>
@@ -729,6 +844,12 @@ html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); te
       </div>
     </section>
 
+    <section class="panel detail" id="ib-read" hidden>
+      <div class="detail-head"><h2 id="ib-read-title"></h2></div>
+      <p class="fine" id="ib-read-meta"></p>
+      <div class="reading" id="ib-read-text"></div>
+    </section>
+
     <section class="panel" id="station-panel" hidden>
       <div class="fold-head">
         <button type="button" class="fold-toggle" id="station-toggle" aria-expanded="true" aria-controls="station-body"><span class="chev" aria-hidden="true">v</span>AGENTS <span class="count" id="station-count">0</span></button>
@@ -780,7 +901,7 @@ html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); te
     </section>
 
     <section class="panel tools">
-      <details id="more-box">
+      <details id="more-box" class="whole" open>
         <summary>MORE</summary>
         <p class="sub">CLOCK ON THIS DEVICE</p>
         <div class="row clock-row" role="radiogroup" aria-label="Clock">
@@ -875,8 +996,13 @@ html:not([data-theme=classic]) body.railed .rail-head { color: var(--orange); te
 <script>(() => {
 'use strict';
 /** Scrolls a panel into view, except inside the pop-out menu (which shows it already, and must never scroll the window). @param {Element} el @param {ScrollIntoViewOptions} opts */
-const reveal = (el, opts) => { if (!document.body.classList.contains('railed')) el.scrollIntoView(opts); };
-/** The pop-out menu, on wide windows (see rail.js). @type {any} */ let railApi = null;
+const reveal = (el, opts) => {
+  const box = el.closest('.sp-scroll');
+  if (!box) { if (!document.body.classList.contains('split-on')) el.scrollIntoView(opts); return; }
+  const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+  if (r.top < b.top || r.bottom > b.bottom) box.scrollTop += r.top - b.top - 8;
+};
+/** The menu (see split.js). @type {any} */ let railApi = null;
 
 // ---------------------------------------------------------------- settings
 const NEGLECT_DAYS = 7;     // a task with no deadline crosses this long after its last check-in
@@ -2110,7 +2236,7 @@ window.addEventListener('storage', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
-  if (e.key === 'Escape' && !typing) { if (zoom) zoomOut(); else if (sel) select(null); }
+  if (e.key === 'Escape' && !typing) { if (depotIn) { leaveDepot(); zoomTo('outpost'); zoom.start = performance.now() - ZOOM_MS; } else if (zoom) zoomOut(); else if (sel) select(null); }
 });
 
 // ---------------------------------------------------------------- focus timer (Pomodoro)
@@ -2939,6 +3065,7 @@ setInterval(() => {
   for (const it of inboxState.items) if (it.taskId && !it.failed && delivered(it) && attachAnswer(it.taskId, it.agents[0] || 'An agent', it.text, it.id, it.at)) changed = true;
   if (changed) { save(); renderLists(); fillDetail(); }
 }, 30000);
+/** The result open in the reading pane. @type {string|null} */ let inboxReading = null;
 function renderInbox() {
   inboxShown = inboxState.items.filter(delivered).map((i) => i.id).join(',');
   const items = inboxState.items.filter((i) => !inboxState.hidden.has(i.id) && delivered(i));
@@ -2955,14 +3082,16 @@ function renderInbox() {
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'ib-open';
-    open.setAttribute('aria-expanded', String(inboxOpen.has(it.id)));
+    open.setAttribute('aria-current', String(inboxReading === it.id));
+    if (inboxReading === it.id) li.classList.add('sel');
     const t = document.createElement('span'); t.className = 'ib-title'; t.textContent = it.job;
     const m = document.createElement('span'); m.className = 'ib-meta';
     m.textContent = it.agents.join(' → ') + (it.at ? ' · ' + whenText(it.at) : '');
     open.append(t, m);
     open.addEventListener('click', () => {
-      if (inboxOpen.has(it.id)) inboxOpen.delete(it.id); else inboxOpen.add(it.id);
+      inboxReading = it.id;
       inboxState.read.add(it.id);
+      if (railApi) railApi.open('inbox', 2);
       saveInbox();
       renderInbox();
     });
@@ -2974,18 +3103,23 @@ function renderInbox() {
     hide.addEventListener('click', () => armThen(hide, 'SURE?', () => {
       inboxState.hidden.add(it.id);
       inboxState.read.add(it.id);
+      if (inboxReading === it.id) inboxReading = null;
       saveInbox();
       renderInbox();
     }));
     head.append(open, hide);
     li.append(head);
-    if (inboxOpen.has(it.id)) {
-      const body = document.createElement('div');
-      body.className = 'ib-text';
-      body.textContent = it.text; // always plain text, never HTML
-      li.append(body);
-    }
     ul.append(li);
+  }
+  // The one being read, in the reading pane.
+  const cur = items.find((i) => i.id === inboxReading);
+  const pane = $('#ib-read');
+  pane.hidden = !cur;
+  if (cur) {
+    $('#ib-read-title').textContent = cur.job;
+    $('#ib-read-meta').textContent = cur.agents.join(' → ') + (cur.at ? ' · ' + whenText(cur.at) : '');
+    $('#ib-read-text').textContent = cur.text; // always plain text, never HTML
+    $('#ib-read-title').classList.toggle('failed', !!cur.failed);
   }
 }
 setupFold('#inbox-toggle', '#inbox-body', 'inbox');
@@ -4696,6 +4830,160 @@ function drawOutpostView(tm, dt, since) {
   }
 }
 
+// ---------------------------------------------------------------- inside the Supply Depot
+// Like walking into the Lunar Post: the depot has its own room. Each thing in
+// it opens part of the depot's menu: the shelves (shopping list), the safe
+// (budget), the register (spending), the calendar (bills), the jar (savings)
+// and the ledger (past months). Nothing about money is drawn here.
+let depotIn = null;            // { start } while inside
+let depotBoxes = [];
+function enterDepot() {
+  if (!depotIn) depotIn = { start: performance.now() };
+  if (railApi && railApi.place() !== 'depot') railApi.setPlace('depot');
+}
+function leaveDepot() {
+  if (!depotIn) return;
+  depotIn = null;
+  depotBoxes = [];
+  if (railApi && railApi.place() === 'depot') railApi.setPlace('main');
+}
+function drawDepotView(tm, since) {
+  pos.clear();
+  pv = null;
+  bboxes = [];
+  depotBoxes = [];
+  // The room keeps a landscape shape; on a tall phone screen the wall just
+  // goes up higher above it.
+  const RH = Math.min(H, Math.round(W * 0.62)), oy = Math.round((H - RH) * 0.45);
+  const tight = W < 300;
+  const u = Math.max(1, Math.round(Math.min(W / 3, RH) / 70));
+  ctx.fillStyle = '#120f24'; ctx.fillRect(0, 0, W, H);
+  for (let x = 0; x < W; x += 12 * u) { ctx.fillStyle = '#16132b'; ctx.fillRect(x, 0, 6 * u, H); }
+  ctx.save();
+  ctx.translate(0, oy);
+  const floorY = Math.round(RH * 0.72);
+  ctx.fillStyle = '#2a2448'; ctx.fillRect(0, floorY - u, W, u);
+  ctx.fillStyle = '#0c0a19'; ctx.fillRect(0, floorY, W, H - oy - floorY);
+  for (let y = floorY + 4 * u; y < H - oy; y += 6 * u) { ctx.fillStyle = '#100d20'; ctx.fillRect(0, y, W, 1); }
+  // ceiling lamps
+  for (const fx of [0.25, 0.5, 0.75]) {
+    const lx = Math.round(W * fx);
+    ctx.fillStyle = '#2a2448'; ctx.fillRect(lx, -oy, 1, 5 * u + oy);
+    ctx.fillStyle = '#ffe2b0'; ctx.fillRect(lx - 2 * u, 5 * u, 5 * u, u);
+    ctx.globalAlpha = 0.05; ctx.fillStyle = '#ffd27a';
+    ctx.beginPath(); ctx.moveTo(lx - 2 * u, 6 * u); ctx.lineTo(lx + 3 * u, 6 * u); ctx.lineTo(lx + 16 * u, floorY); ctx.lineTo(lx - 15 * u, floorY); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  // a window onto space, with the black hole's glow in it
+  const wx = Math.round(W * 0.06), wy = Math.round(RH * 0.12), ww = Math.round(W * 0.14), whh = Math.round(RH * 0.22);
+  ctx.fillStyle = '#05040b'; ctx.fillRect(wx, wy, ww, whh);
+  for (let i = 0; i < 14; i++) px(wx + ((i * 37) % ww), wy + ((i * 23) % whh), '#8a90c4');
+  drawLooming(tm, wx + Math.round(ww * 0.7), wy + whh, Math.max(3, Math.round(whh * 0.28)), (x, y, c) => { if (x >= wx && x < wx + ww && y >= wy && y < wy + whh) px(x, y, c); });
+  ctx.fillStyle = '#3a3360'; ctx.fillRect(wx - u, wy - u, ww + 2 * u, u); ctx.fillRect(wx - u, wy + whh, ww + 2 * u, u); ctx.fillRect(wx - u, wy, u, whh); ctx.fillRect(wx + ww, wy, u, whh); ctx.fillRect(wx + Math.round(ww / 2), wy, u, whh);
+
+  const spot = (id, x0, y0, x1, y1, name, sub, subColor, small) => {
+    depotBoxes.push({ id, x0, y0: y0 + oy, x1, y1: y1 + oy });
+    const hov = depotHover === id;
+    if (hov) brackets((x0 + x1) / 2, (y0 + y1) / 2, Math.max(x1 - x0, y1 - y0) / 2 + 2);
+    const cx = Math.round((x0 + x1) / 2);
+    if (tight && small && !hov) return; // too narrow for every label: hover or tap shows it
+    drawText(name, cx - textWidth(name) / 2, y1 + 3, hov ? '#ffffff' : '#c8cce8');
+    // On the crowded counter the second line only shows on hover.
+    if (sub && (!small || hov)) {
+      if (small) { ctx.fillStyle = 'rgba(5,4,11,.85)'; ctx.fillRect(cx - textWidth(sub) / 2 - 2, y1 + 9, textWidth(sub) + 4, 7); }
+      drawText(sub, cx - textWidth(sub) / 2, y1 + 10, subColor || '#4b4f78');
+    }
+  };
+
+  // the shelves (shopping list): goods on three boards
+  const sx = Math.round(W * 0.06), sw = Math.round(W * 0.26), sTop = Math.round(RH * 0.4), sh = floorY - sTop;
+  ctx.fillStyle = '#2e2a48'; ctx.fillRect(sx, sTop, u * 2, sh); ctx.fillRect(sx + sw - 2 * u, sTop, 2 * u, sh);
+  const goods = ['#6fe08a', '#ffe066', '#5ad1ff', '#ff8fc7', '#ff9d3c', '#b49cff'];
+  for (let r = 0; r < 3; r++) {
+    const by = sTop + Math.round((r + 1) * sh / 3.2);
+    ctx.fillStyle = '#4a4270'; ctx.fillRect(sx, by, sw, u);
+    for (let k = 0, x = sx + 3 * u; x < sx + sw - 6 * u; k++) {
+      const gw = (3 + ((k * 7 + r) % 3)) * u, gh = (4 + ((k * 5 + r * 3) % 4)) * u;
+      ctx.fillStyle = goods[(k + r * 2) % goods.length];
+      ctx.fillRect(x, by - gh, gw, gh);
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + gw - u, by - gh, u, gh);
+      x += gw + 2 * u;
+    }
+  }
+  const needs = state.shopping.filter((it) => it.list === 'need' && !it.checked).length;
+  spot('list', sx, sTop, sx + sw, floorY, 'SHELVES', needs ? plural(needs, 'need').toUpperCase() : 'SHOPPING LIST', needs ? '#ffe066' : '#4b4f78');
+
+  // the counter, with the register, the savings jar and the ledger
+  const cx0 = Math.round(W * 0.38), cw = Math.round(W * 0.34), cTop = floorY - 12 * u;
+  // the clerk bot behind it
+  const bob = Math.round(Math.sin(tm / 500));
+  const bx = cx0 + Math.round(cw * 0.5);
+  ctx.fillStyle = '#c8cce8'; ctx.fillRect(bx - 4 * u, cTop - 11 * u + bob, 8 * u, 7 * u);
+  ctx.fillStyle = '#05040b'; ctx.fillRect(bx - 3 * u, cTop - 10 * u + bob, 6 * u, 3 * u);
+  ctx.fillStyle = Math.floor(tm / 1800) % 6 === 0 ? '#05040b' : '#6fe08a'; ctx.fillRect(bx - 2 * u, cTop - 9 * u + bob, u, u); ctx.fillRect(bx + u, cTop - 9 * u + bob, u, u);
+  ctx.fillStyle = '#8a90c4'; ctx.fillRect(bx, cTop - 13 * u + bob, u, 2 * u);
+  ctx.fillStyle = '#4a4270'; ctx.fillRect(cx0, cTop, cw, 2 * u);
+  ctx.fillStyle = '#2e2a48'; ctx.fillRect(cx0 + u, cTop + 2 * u, cw - 2 * u, floorY - cTop - 2 * u);
+  ctx.fillStyle = '#3a3360'; for (let x = cx0 + 4 * u; x < cx0 + cw - 4 * u; x += 8 * u) ctx.fillRect(x, cTop + 4 * u, 4 * u, 6 * u);
+  // register
+  const rx = cx0 + 3 * u, ry = cTop - 7 * u;
+  ctx.fillStyle = '#5a5288'; ctx.fillRect(rx, ry + 3 * u, 10 * u, 4 * u);
+  ctx.fillStyle = '#05040b'; ctx.fillRect(rx + u, ry, 7 * u, 3 * u);
+  ctx.fillStyle = '#6fe08a'; ctx.fillRect(rx + 2 * u, ry + u, (Math.floor(tm / 400) % 4 + 2) * u, u);
+  spot('spending', rx, ry, rx + 10 * u, cTop, 'REGISTER', 'SPENDING', null, true);
+  // ledger
+  const lx = cx0 + Math.round(cw * 0.5) - 4 * u + 9 * u, ly = cTop - 3 * u;
+  ctx.fillStyle = '#7a3a2a'; ctx.fillRect(lx, ly, 8 * u, 3 * u);
+  ctx.fillStyle = '#e6e9f0'; ctx.fillRect(lx + u, ly, 6 * u, u);
+  spot('months', lx, ly - u, lx + 8 * u, cTop, 'LEDGER', 'PAST MONTHS', null, true);
+  // savings jar, filled to the first goal's progress
+  const jx = cx0 + cw - 9 * u, jy = cTop - 9 * u, fill = money.jarFill();
+  ctx.fillStyle = '#3a6a8a'; ctx.fillRect(jx, jy, 6 * u, 9 * u);
+  ctx.fillStyle = '#0c0a19'; ctx.fillRect(jx + u, jy + u, 4 * u, 8 * u);
+  const fh = Math.round(8 * u * fill);
+  ctx.fillStyle = '#ffd27a'; ctx.fillRect(jx + u, jy + 9 * u - fh, 4 * u, fh);
+  ctx.fillStyle = '#8ac4e0'; ctx.fillRect(jx - u, jy - u, 8 * u, u);
+  spot('goals', jx - u, jy - u, jx + 7 * u, cTop, 'JAR', 'SAVINGS', null, true);
+
+  // the calendar on the wall (bills)
+  const kx = Math.round(W * 0.5) - 6 * u, ky = Math.round(RH * 0.12);
+  ctx.fillStyle = '#e6e9f0'; ctx.fillRect(kx, ky, 12 * u, 11 * u);
+  ctx.fillStyle = '#c43a4a'; ctx.fillRect(kx, ky, 12 * u, 3 * u);
+  ctx.fillStyle = '#9aa0c8'; for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) ctx.fillRect(kx + u + c * 3 * u, ky + 4 * u + r * 2 * u, u, u);
+  const due = money.billsDue();
+  if (due && Math.floor(tm / 500) % 2) { ctx.fillStyle = '#ff4d5e'; ctx.fillRect(kx + 10 * u, ky - u, 3 * u, 3 * u); }
+  spot('bills', kx, ky, kx + 12 * u, ky + 11 * u, 'CALENDAR', due ? 'BILLS DUE SOON' : 'BILLS', due ? '#ff9d3c' : '#4b4f78');
+
+  // the safe (budget)
+  const fx = Math.round(W * 0.78), fw = Math.round(W * 0.13), fTop = floorY - Math.round(fw * 0.9);
+  ctx.fillStyle = '#3a3f5a'; ctx.fillRect(fx, fTop, fw, floorY - fTop);
+  ctx.fillStyle = '#2a2e46'; ctx.fillRect(fx + 2 * u, fTop + 2 * u, fw - 4 * u, floorY - fTop - 4 * u);
+  const dx = fx + Math.round(fw / 2), dy = fTop + Math.round((floorY - fTop) / 2);
+  ctx.fillStyle = '#c8cce8';
+  for (let a = 0; a < 8; a++) { const ang = a / 8 * Math.PI * 2 + tm / 4000; ctx.fillRect(Math.round(dx + Math.cos(ang) * 3 * u), Math.round(dy + Math.sin(ang) * 3 * u), u, u); }
+  ctx.fillStyle = '#ffd27a'; ctx.fillRect(dx - u, dy - u, 2 * u, 2 * u);
+  spot('budget', fx, fTop, fx + fw, floorY, 'SAFE', 'BUDGET');
+  if (tight) drawText('COUNTER', cx0 + Math.round(cw / 2) - textWidth('COUNTER') / 2, floorY + 3, '#c8cce8');
+  ctx.restore();
+
+  const title = 'SUPPLY DEPOT';
+  drawText(title, W / 2 - textWidth(title) / 2, 3, '#c8cce8');
+  const back = '< HOME BASE';
+  drawText(back, 2, 3, depotHover === 'back' ? '#ffffff' : '#8a90c4');
+  depotBoxes.push({ id: 'back', x0: 0, y0: 0, x1: textWidth(back) + 4, y1: 10 });
+  if (since < 260) {
+    ctx.fillStyle = 'rgba(5,4,11,' + (0.95 * (1 - since / 260)).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+let depotHover = null;
+function depotHit(e) {
+  const r = canvas.getBoundingClientRect();
+  const x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
+  const b = depotBoxes.find((q) => x >= q.x0 - 2 && x <= q.x1 + 2 && y >= q.y0 - 2 && y <= q.y1 + 12);
+  return b ? b.id : null;
+}
+
 function hash32(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
@@ -4825,6 +5113,7 @@ let last = performance.now();
 function frame(tm) {
   const dt = Math.min(0.1, Math.max(0, (tm - last) / 1000));
   last = tm;
+  if (depotIn) { drawDepotView(tm, performance.now() - depotIn.start); requestAnimationFrame(frame); return; }
   const zm = zoomMode(performance.now());
   if (zm.mode === 'planet') {
     if (zoom.gid === 'outpost') drawOutpostView(tm, dt, zm.since);
@@ -4897,21 +5186,46 @@ function openWarehouse() {
   else toast('This moon holds your Lunar Post. It opens in the Agent Station app on your Mac.', true);
 }
 canvas.addEventListener('click', (e) => {
+  if (depotIn) {
+    const id = depotHit(e);
+    if (id === 'back') { leaveDepot(); zoomTo('outpost'); zoom.start = performance.now() - ZOOM_MS; return; }
+    if (id && railApi) { if (id === 'list') openShop(); railApi.open(id); }
+    return;
+  }
   const h = hit(e);
   if (zoom) {                                   // in the close-up
     if (zoom.out) return;
     if (!h || h.type === 'zoomout') { zoomOut(); return; }
     if (h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); return; }
-    if (h.type === 'building') { if (h.id === 'depot') openShop(); else openWarehouse(); return; }
+    if (h.type === 'building') { if (h.id === 'depot') enterDepot(); else openWarehouse(); return; }
     select(h.type, h.id);
     return;
   }
-  if (h && h.type === 'astro') { if (railApi) railApi.open('timer'); reveal($('#timer-panel'), { block: 'nearest', behavior: 'smooth' }); return; }
+  if (h && h.type === 'astro') { if (railApi) railApi.open('timer'); return; }
   if (h && h.type === 'outpost') { zoomTo('outpost'); return; }
   if (h && h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); zoomTo(h.id); return; }
+  if (h && h.type === 'task' && railApi) { taskCard(h.id, e); return; }
   if (h) select(h.type, h.id); else if (sel) select(null);
 });
-canvas.addEventListener('mousemove', (e) => { hover = hit(e); canvas.style.cursor = hover ? 'pointer' : 'default'; });
+/** The quick card for a task clicked in the orbit: the essentials and a few actions. */
+function taskCard(id, e) {
+  const t = taskById(id);
+  if (!t) return;
+  const g = t.groupId ? groupById(t.groupId) : null;
+  const at = Date.now(), steps = (t.checklist || []);
+  const lines = [(g ? g.name + ' · ' : '') + dueText(t, at)];
+  if (t.status === 'orbit') lines.push('Pull ' + pct(pullOf(t, at)) + (steps.length ? ' · ' + steps.filter((x) => x.done).length + ' of ' + steps.length + ' steps done' : ''));
+  const acts = [{ label: 'OPEN', primary: true, run: () => { if (!isSel('task', id)) select('task', id); else railApi.open('tasks', 2); } }];
+  if (t.status === 'orbit') {
+    acts.push({ label: 'CHECK IN', run: () => { checkIn(t); save(); renderLists(); updateStats(); toast('Checked in on "' + t.title + '".', true); } });
+    acts.push({ label: 'COMPLETE', run: () => { if (!isSel('task', id)) select('task', id); $('#d-complete').click(); } });
+  }
+  railApi.card({ x: e.clientX, y: e.clientY, title: t.title, color: g ? g.color : pullColor(pullOf(t, at)), lines, actions: acts });
+}
+canvas.addEventListener('mousemove', (e) => {
+  if (depotIn) { depotHover = depotHit(e); canvas.style.cursor = depotHover ? 'pointer' : 'default'; return; }
+  hover = hit(e); canvas.style.cursor = hover ? 'pointer' : 'default';
+});
 canvas.addEventListener('mouseleave', () => { hover = null; });
 
 // ---------------------------------------------------------------- start
@@ -4933,18 +5247,51 @@ armWake();
 setInterval(() => { sweep(false); renderLists(); updateStats(); updateGroupStats(); timerTick(); renderTimer(); }, 1000);
 requestAnimationFrame(frame);
 
-// The pop-out menu on wide windows (see rail.js).
-const sectionOf = (/** @type {string} */ sel) => { const el = document.querySelector(sel); return el ? el.closest('aside > *') : null; };
-railApi = makeRail({
-  key: 'blackhole.rail',
-  fallback: 'tasks',
-  tabs: [
-    { id: 'tasks', label: 'TASKS', always: true, parts: [$('.actions'), sectionOf('#orbit-list'), $('#lost-panel'), sectionOf('#done-list')], auto: [$('#detail'), $('#gdetail'), $('#new-task-panel'), $('#new-group-panel')] },
-    { id: 'timer', label: 'TIMER', always: true, parts: [$('#timer-panel')] },
-    { id: 'list', label: 'LIST', parts: [], auto: [$('#shop-panel')], open: () => { if ($('#shop-panel').hidden) openShop(); } },
-    { id: 'inbox', label: 'INBOX', parts: [$('#inbox-panel')] },
-    { id: 'agents', label: 'AGENTS', parts: [$('#station-panel')] },
-    { id: 'more', label: 'MORE', always: true, parts: [sectionOf('#more-box')], open: () => { $('#more-box').open = true; } },
+// The menu: a split workspace over the scene (see split.js).
+const sectionOf = (/** @type {string} */ q) => { const el = document.querySelector(q); return el ? el.closest('aside > *') : null; };
+const money = makeMoney({
+  toast,
+  open: (id) => { if (railApi) railApi.open(id); },
+  // Money sync uses the same repo as task sync, but its own file and its own key.
+  sync: { cfg: () => syncCfg, read: (path) => ghReadPath(syncCfg, path), write: (path, file, sha) => ghWritePath(syncCfg, path, file, sha) },
+});
+// @ts-ignore (defined in split.js)
+railApi = makeSplit({
+  key: 'blackhole.menu',
+  start: 'tasks',
+  thumb: canvas,
+  menuHost: document.querySelector('.bar'),
+  side: [$('#storage-warning')],
+  places: { main: { back: 'BACK TO ORBIT', first: 'tasks' }, depot: { back: 'BACK TO THE DEPOT', first: 'list' } },
+  onPlace: (pl) => { if (pl === 'depot') enterDepot(); else { leaveDepot(); zoom = null; } },
+  sections: [
+    { id: 'tasks', label: 'TASKS', blurb: 'Everything in orbit', always: true,
+      list: [sectionOf('#orbit-list'), $('#lost-panel'), sectionOf('#done-list')],
+      read: [$('#detail'), $('#gdetail'), $('#new-task-panel'), $('#new-group-panel')],
+      tools: [$('#add-task-btn'), $('#add-group-btn')],
+      empty: 'Pick a task or planet, or press + TASK.',
+      count: () => String(state.tasks.filter((t) => t.status === 'orbit').length),
+      hot: () => state.tasks.some((t) => t.status === 'orbit' && pullOf(t, Date.now()) >= 0.9) },
+    { id: 'timer', label: 'TIMER', blurb: 'Focus sessions and breaks', always: true, flat: true, read: [$('#timer-panel')],
+      count: () => (timer.phase === 'idle' ? '' : $('#tm-mini').textContent || '') },
+    { id: 'inbox', label: 'INBOX', blurb: 'Results from your agents', list: [$('#inbox-panel')], read: [$('#ib-read')],
+      empty: 'Pick a result to read it.',
+      count: () => { const n = inboxState.items.filter((i) => delivered(i) && !inboxState.hidden.has(i.id) && !inboxState.read.has(i.id)).length; return n ? n + ' new' : ''; },
+      hot: () => inboxState.items.some((i) => delivered(i) && !inboxState.hidden.has(i.id) && !inboxState.read.has(i.id)) },
+    { id: 'agents', label: 'AGENTS', blurb: 'Your staff, from anywhere', flat: true, read: [$('#station-panel')] },
+    { id: 'more', label: 'MORE', blurb: 'Alerts, sync, look, backup', always: true, flat: true, read: [sectionOf('#more-box')] },
+    { id: 'go-depot', label: 'SUPPLY DEPOT', blurb: 'Shopping list and money', go: 'depot' },
+    // The Supply Depot: its own place, like the Lunar Post.
+    { id: 'list', place: 'depot', label: 'SHOPPING LIST', blurb: 'Needs and wants', always: true, flat: true, read: [$('#shop-panel')], open: () => { if ($('#shop-panel').hidden) openShop(); },
+      count: () => String(state.shopping.filter((i) => !i.checked).length || '') },
+    { id: 'budget', place: 'depot', label: 'BUDGET', blurb: 'This month at a glance', always: true, flat: true, read: [money.budget], open: () => money.render() },
+    { id: 'spending', place: 'depot', label: 'SPENDING', blurb: 'What your money went on', always: true, list: [money.spendList], read: [money.spendRead], tools: [money.spendAdd], empty: 'Pick a purchase, or press + SPENT.', open: () => money.render() },
+    { id: 'bills', place: 'depot', label: 'BILLS', blurb: 'Rent, phone, subscriptions', always: true, list: [money.billsList], read: [money.billsRead], tools: [money.billsAdd], empty: 'Pick a bill, or press + BILL.', open: () => money.render(),
+      count: () => money.billsDue() },
+    { id: 'goals', place: 'depot', label: 'SAVINGS', blurb: 'Goals you are saving for', always: true, list: [money.goalsList], read: [money.goalsRead], tools: [money.goalsAdd], empty: 'Pick a goal, or press + GOAL.', open: () => money.render() },
+    { id: 'months', place: 'depot', label: 'PAST MONTHS', blurb: 'How each month went', always: true, flat: true, read: [money.months], open: () => money.render() },
+    { id: 'money-setup', place: 'depot', label: 'MONEY SETTINGS', blurb: 'Categories, sync, backup', always: true, flat: true, read: [money.setup], open: () => money.render() },
+    { id: 'go-orbit', place: 'depot', label: 'BACK TO ORBIT', blurb: 'Tasks, timer, inbox', go: 'main' },
   ],
 });
 })();
@@ -5153,130 +5500,1107 @@ railApi = makeRail({
 })();
 
 // @ts-check
-// The pop-out menu for wide windows (the Mac app, or a laptop browser): a rail
-// of tabs down the right edge; each tab slides out a panel with only its own
-// sections, so nothing has to be scrolled past. Phones keep the long list.
-/**
- * @param {{ key: string, tabs: { id: string, label: string, parts: (Element|null)[], auto?: (Element|null)[], open?: () => void, always?: boolean }[], fallback: string }} cfg
- */
-// eslint-disable-next-line no-unused-vars
-function makeRail(cfg) {
-  const aside = document.querySelector('aside');
-  const main = document.querySelector('main');
-  if (!aside || !main) return null;
-  const wide = window.matchMedia('(min-width: 821px)');
-  const rail = document.createElement('nav');
-  rail.className = 'rail';
-  rail.setAttribute('aria-label', 'Menu');
-  main.append(rail);
-  // A header inside the pop-out: which tab, and a way to close it.
-  const head = document.createElement('div');
-  head.className = 'rail-head';
-  const title = document.createElement('span');
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = 'close';
-  close.textContent = '»';
-  close.title = 'Close the menu';
-  close.setAttribute('aria-label', 'Close the menu');
-  head.append(title, close);
-  aside.prepend(head);
+// The menu as a split workspace (like Mail): sections down the left, a list in
+// the middle and a reading pane on the right. The scene shrinks to a small
+// picture in the corner; click it (or press Escape) to go back. On phones the
+// three columns become three steps with a back button.
+//
+// The page's own panels are moved into the columns, so everything they already
+// do keeps working; this file only decides which of them shows.
 
-  /** @type {Map<string, HTMLButtonElement>} */
-  const buttons = new Map();
-  for (const t of cfg.tabs) {
-    for (const el of [...t.parts, ...(t.auto || [])]) if (el instanceof HTMLElement) el.dataset.tab = t.id;
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'rail-tab';
-    b.textContent = t.label;
-    b.setAttribute('aria-pressed', 'false');
-    b.addEventListener('click', () => {
-      if (isOpen && current === t.id) { isOpen = false; apply(); return; }
-      current = t.id;
-      isOpen = true;
-      remember();
-      apply();
-      if (t.open) t.open();
-    });
-    rail.append(b);
-    buttons.set(t.id, b);
+/**
+ * @typedef {{ id: string, label: string, blurb?: string, place?: string,
+ *   list?: (Element|null)[], read?: (Element|null)[], flat?: boolean, always?: boolean,
+ *   go?: string, empty?: string, count?: () => string, hot?: () => boolean,
+ *   open?: () => void, tools?: (Element|null)[] }} SplitSection
+ * @typedef {{ key: string, sections: SplitSection[], start: string, places?: Record<string, { back: string, first: string }>,
+ *   thumb: HTMLCanvasElement, menuHost: Element|null, side?: (Element|null)[], onPlace?: (place: string) => void,
+ *   onClose?: () => void }} SplitConfig
+ */
+/** @param {SplitConfig} cfg */
+// eslint-disable-next-line no-unused-vars
+function makeSplit(cfg) {
+  const main = document.querySelector('main');
+  const aside = document.querySelector('aside');
+  if (!main) return null;
+  /** @param {string} tag @param {string} [cls] @param {string} [text] */
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  // ------------------------------------------------------------ the frame
+  const root = el('section', 'split closed');
+  root.id = 'split';
+  root.setAttribute('aria-label', 'Menu');
+  const side = el('div', 'sp-side');
+  const thumbBtn = /** @type {HTMLButtonElement} */ (el('button', 'sp-thumb'));
+  thumbBtn.type = 'button';
+  const thumb = /** @type {HTMLCanvasElement} */ (el('canvas'));
+  thumb.width = 200; thumb.height = 90;
+  const thumbLabel = el('span', '', '');
+  thumbBtn.append(thumb, thumbLabel);
+  const secList = el('ul', 'sp-secs');
+  side.append(thumbBtn, secList);
+  for (const x of cfg.side || []) if (x) side.append(x);
+
+  const listCol = el('div', 'sp-col sp-list');
+  const listHead = el('div', 'sp-head');
+  const listUp = /** @type {HTMLButtonElement} */ (el('button', 'sp-up', '‹'));
+  listUp.type = 'button'; listUp.setAttribute('aria-label', 'Back to the sections');
+  const listTitle = el('h2', 'sp-title');
+  const listTools = el('span', 'sp-tools');
+  listHead.append(listUp, listTitle, listTools);
+  const listBody = el('div', 'sp-scroll');
+  listCol.append(listHead, listBody);
+
+  const grip = el('div', 'sp-grip');
+  grip.setAttribute('role', 'separator');
+  grip.setAttribute('aria-orientation', 'vertical');
+  grip.setAttribute('aria-label', 'Drag to make the list wider or narrower');
+  grip.tabIndex = 0;
+
+  const readCol = el('div', 'sp-col sp-read');
+  const readHead = el('div', 'sp-head sp-read-head');
+  const readUp = /** @type {HTMLButtonElement} */ (el('button', 'sp-up', '‹'));
+  readUp.type = 'button'; readUp.setAttribute('aria-label', 'Back');
+  const readTitle = el('h2', 'sp-title');
+  readHead.append(readUp, readTitle);
+  const readBody = el('div', 'sp-scroll');
+  const empty = el('p', 'sp-empty');
+  readCol.append(readHead, readBody);
+  root.append(side, listCol, grip, readCol);
+  main.append(root);
+
+  // The quick card that pops up next to something clicked in the scene.
+  const card = el('div', 'sp-card');
+  card.hidden = true;
+  card.setAttribute('role', 'dialog');
+  main.append(card);
+
+  // The MENU button in the header.
+  const menuBtn = /** @type {HTMLButtonElement} */ (el('button', 'sp-menu', 'MENU'));
+  menuBtn.type = 'button';
+  menuBtn.setAttribute('aria-expanded', 'false');
+  menuBtn.setAttribute('aria-controls', 'split');
+  if (cfg.menuHost) cfg.menuHost.append(menuBtn);
+
+  // ------------------------------------------------------------ moving the panels in
+  /** @type {Map<string, { sec: SplitSection, listBox: HTMLElement, readBox: HTMLElement }>} */
+  const boxes = new Map();
+  for (const sec of cfg.sections) {
+    const listBox = el('div', 'sp-box');
+    const readBox = el('div', 'sp-box');
+    listBox.dataset.sec = sec.id; readBox.dataset.sec = sec.id;
+    for (const p of sec.list || []) if (p) listBox.append(p);
+    for (const p of sec.read || []) if (p) readBox.append(p);
+    listBody.append(listBox);
+    readBody.append(readBox);
+    boxes.set(sec.id, { sec, listBox, readBox });
   }
-  let current = cfg.fallback;
-  let isOpen = false;
-  let shownTab = '';
-  try { const saved = localStorage.getItem(cfg.key); if (saved && cfg.tabs.some((t) => t.id === saved)) current = saved; } catch (e) { /* default */ }
-  const remember = () => { try { localStorage.setItem(cfg.key, current); } catch (e) { /* fine */ } };
-  /** A tab shows when it can always be opened, or something of its is showing. @param {typeof cfg.tabs[number]} t */
-  const available = (t) => !!(t.open || t.always) || [...t.parts, ...(t.auto || [])].some((el) => el instanceof HTMLElement && !el.hidden);
+  readBody.append(empty);
+  document.body.classList.add('split-on');
+  if (aside && !aside.querySelector('section, details, ul')) aside.hidden = true;
+
+  // ------------------------------------------------------------ state
+  const wide = window.matchMedia('(min-width: 821px)');
+  let place = 'main', current = cfg.start, isOpen = false, level = 1;
+  try {
+    const saved = localStorage.getItem(cfg.key);
+    if (saved && boxes.has(saved) && (boxes.get(saved)?.sec.place || 'main') === 'main') current = saved;
+  } catch (e) { /* the default */ }
+  const remember = () => { try { if (place === 'main') localStorage.setItem(cfg.key, current); } catch (e) { /* fine */ } };
+  const shows = (/** @type {Element|null} */ x) => x instanceof HTMLElement && !x.hidden;
+  /** @param {SplitSection} s */
+  const available = (s) => !!(s.always || s.go || s.open) || [...(s.list || []), ...(s.read || [])].some(shows);
+  /** @param {SplitSection} s */
+  const reading = (s) => !!s.flat || (s.read || []).some(shows);
+  const inPlace = (/** @type {SplitSection} */ s) => (s.place || 'main') === place || (!!s.go && (s.place || 'main') === place);
+
+  function renderSections() {
+    secList.textContent = '';
+    for (const s of cfg.sections) {
+      if (!inPlace(s) || !available(s)) continue;
+      const li = el('li');
+      const b = /** @type {HTMLButtonElement} */ (el('button', 'sp-sec' + (s.go ? ' go' : '')));
+      b.type = 'button';
+      if (s.id === current && !s.go) b.setAttribute('aria-current', 'true');
+      const name = el('span', 'sp-sec-name', s.label);
+      b.append(name);
+      const n = s.count ? s.count() : '';
+      if (n) b.append(el('span', 'sp-badge' + (s.hot && s.hot() ? ' hot' : ''), n));
+      if (s.blurb) b.append(el('span', 'sp-sec-blurb', s.blurb));
+      b.addEventListener('click', () => {
+        if (s.go) { setPlace(s.go); return; }
+        current = s.id;
+        remember();
+        level = reading(s) ? 2 : 1;
+        if (s.open) s.open();
+        apply();
+      });
+      li.append(b);
+      secList.append(li);
+    }
+  }
 
   function apply() {
-    const on = wide.matches;
-    document.body.classList.toggle('railed', on);
-    if (!on) {
-      aside.classList.remove('out');
-      document.body.classList.remove('rail-open');
-      return;
+    let box = boxes.get(current);
+    if (!box || !inPlace(box.sec) || !available(box.sec)) {
+      const first = cfg.places && cfg.places[place] ? cfg.places[place].first : cfg.start;
+      current = first;
+      box = boxes.get(current);
     }
-    const tab = cfg.tabs.find((t) => t.id === current) || cfg.tabs[0];
-    if (!available(tab)) current = cfg.fallback;
-    const switched = shownTab !== current;
-    shownTab = current;
-    if (aside.classList.contains('out') !== isOpen) aside.classList.toggle('out', isOpen);
-    if (document.body.classList.contains('rail-open') !== isOpen) document.body.classList.toggle('rail-open', isOpen);
-    for (const el of aside.querySelectorAll('[data-tab]')) {
-      const off = /** @type {HTMLElement} */ (el).dataset.tab !== current;
-      if (el.classList.contains('off') !== off) el.classList.toggle('off', off);
-    }
-    if (switched) aside.scrollTop = 0;
-    for (const t of cfg.tabs) {
-      const b = /** @type {HTMLButtonElement} */ (buttons.get(t.id));
-      const hide = !available(t), on = isOpen && t.id === current;
-      if (b.hidden !== hide) b.hidden = hide;
-      if (b.classList.contains('on') !== on) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
-    }
-    const label = (cfg.tabs.find((t) => t.id === current) || cfg.tabs[0]).label;
-    if (title.textContent !== label) title.textContent = label;
-    // Nothing should ever scroll the page sideways (it would shift the scene
-    // under the mouse); put it back if something did.
-    if (main.scrollLeft || main.scrollTop) { main.scrollLeft = 0; main.scrollTop = 0; }
-    const se = document.scrollingElement;
-    if (se && (se.scrollLeft || se.scrollTop)) { se.scrollLeft = 0; se.scrollTop = 0; }
+    if (!box) return;
+    const s = box.sec;
+    root.classList.toggle('closed', !isOpen);
+    root.classList.toggle('flat', !!s.flat);
+    document.body.classList.toggle('split-open', isOpen);
+    menuBtn.setAttribute('aria-expanded', String(isOpen));
+    menuBtn.classList.toggle('on', isOpen);
+    for (const [id, b] of boxes) { const on = id === current; if (b.listBox.hidden === on) b.listBox.hidden = !on; if (b.readBox.hidden === on) b.readBox.hidden = !on; }
+    const r = reading(s);
+    empty.hidden = r;
+    empty.textContent = s.empty || 'Pick something from the list.';
+    if (!r && level === 2) level = 1;
+    if (s.flat && level === 1) level = 2;
+    root.dataset.level = String(level);
+    listTitle.textContent = s.label;
+    readTitle.textContent = s.label;
+    listTools.textContent = '';
+    for (const t of s.tools || []) if (t) listTools.append(t);
+    thumbLabel.textContent = cfg.places && cfg.places[place] ? cfg.places[place].back : 'BACK';
+    renderSections();
   }
-  close.addEventListener('click', () => { isOpen = false; apply(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isOpen && wide.matches && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) { isOpen = false; apply(); }
-  });
-  // Something you opened elsewhere (a planet, a desk, the filing cabinet)
-  // brings its tab out; when it closes, the tab goes back to the default.
-  const watched = cfg.tabs.flatMap((t) => (t.auto || []).map((el) => ({ el, t })));
-  // Changes come in bursts (a panel closing as another opens): handle them
-  // together on the next frame, so the menu never shows an in-between state.
+
+  /** @param {string} p */
+  function setPlace(p) {
+    if (place === p) return;
+    place = p;
+    const first = cfg.places && cfg.places[p] ? cfg.places[p].first : cfg.start;
+    current = first;
+    level = 1;
+    if (cfg.onPlace) cfg.onPlace(p);
+    const s = boxes.get(current);
+    if (s && s.sec.open) s.sec.open();
+    if (s) level = reading(s.sec) ? 2 : 1;
+    apply();
+  }
+
+  function close() {
+    if (!isOpen) return;
+    isOpen = false;
+    apply();
+    if (cfg.onClose) cfg.onClose();
+  }
+
+  // ------------------------------------------------------------ watching the panels
+  // Something the page opens on its own (a task, an agent, a file) brings the
+  // menu up at its section, on its page.
   let queued = false;
   const later = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; apply(); }); } };
   new MutationObserver((list) => {
     let relevant = false;
     for (const m of list) {
-      const el = /** @type {HTMLElement} */ (m.target);
-      if (!el.dataset || !el.dataset.tab) continue; // only our sections matter
-      const was = m.oldValue !== null; // hidden before?
-      if (was === el.hidden) continue; // set again to the same: nothing changed
+      const t = /** @type {HTMLElement} */ (m.target);
+      if (t.classList && t.classList.contains('sp-box')) continue;
+      const was = m.oldValue !== null;
+      if (was === t.hidden) continue;
       relevant = true;
-      const hit = watched.find((w) => w.el === el);
-      if (!hit) continue;
-      if (!el.hidden) { current = hit.t.id; isOpen = true; }
-      else if (current === hit.t.id && !available(hit.t)) { current = cfg.fallback; }
+      if (t.hidden) continue;
+      const box = t.closest('.sp-box');
+      if (!box || !(box instanceof HTMLElement) || !box.dataset.sec) continue;
+      const b = boxes.get(box.dataset.sec);
+      if (!b) continue;
+      const isReadPart = (b.sec.read || []).includes(t);
+      if (!isReadPart) continue;
+      if ((b.sec.place || 'main') !== place) { place = b.sec.place || 'main'; if (cfg.onPlace) cfg.onPlace(place); }
+      current = b.sec.id;
+      isOpen = true;
+      level = 2;
     }
     if (relevant) later();
-  }).observe(aside, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
-  // Some panels scroll themselves into view when they open; inside the
-  // pop-out that must only ever scroll the pop-out, never the window.
-  for (const el of [main, document.scrollingElement]) {
-    if (el) el.addEventListener('scroll', () => { if (document.body.classList.contains('railed')) { el.scrollLeft = 0; el.scrollTop = 0; } }, { passive: true });
+  }).observe(root, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
+
+  // ------------------------------------------------------------ controls
+  menuBtn.addEventListener('click', () => {
+    if (isOpen) { close(); return; }
+    isOpen = true;
+    const b = boxes.get(current);
+    if (b && b.sec.open) b.sec.open();
+    if (!wide.matches) level = 0;
+    apply();
+  });
+  thumbBtn.addEventListener('click', () => close());
+  listUp.addEventListener('click', () => { level = 0; apply(); });
+  readUp.addEventListener('click', () => { const b = boxes.get(current); level = b && b.sec.flat ? 0 : 1; apply(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const t = e.target;
+    if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+    if (!card.hidden) { hideCard(); e.stopImmediatePropagation(); return; }
+    if (!isOpen) return;
+    e.stopImmediatePropagation();
+    if (!wide.matches && level > 0) { level -= 1; apply(); return; }
+    close();
+  }, true);
+
+  // The list column can be made wider or narrower.
+  const W_KEY = cfg.key + '.list';
+  const setW = (/** @type {number} */ w, /** @type {boolean} */ keep) => {
+    const v = Math.round(Math.max(220, Math.min(w, Math.max(240, root.clientWidth * 0.5))));
+    root.style.setProperty('--sp-list', v + 'px');
+    if (keep) { try { localStorage.setItem(W_KEY, String(v)); } catch (e) { /* fine */ } }
+  };
+  try { const w = Number(localStorage.getItem(W_KEY)); if (w > 0) root.style.setProperty('--sp-list', w + 'px'); } catch (e) { /* default */ }
+  grip.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    grip.setPointerCapture(e.pointerId);
+    grip.classList.add('drag');
+    const x0 = e.clientX, w0 = listCol.getBoundingClientRect().width;
+    const mv = (/** @type {PointerEvent} */ ev) => setW(w0 + ev.clientX - x0, false);
+    const up = () => { grip.classList.remove('drag'); setW(listCol.getBoundingClientRect().width, true); grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up); };
+    grip.addEventListener('pointermove', mv); grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
+  });
+  grip.addEventListener('keydown', (e) => {
+    const w = listCol.getBoundingClientRect().width;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setW(w - 24, true); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); setW(w + 24, true); }
+  });
+
+  // The little picture of the scene.
+  const tctx = thumb.getContext('2d');
+  function drawThumb() {
+    if (isOpen && tctx && cfg.thumb && cfg.thumb.width) {
+      const r = thumbBtn.getBoundingClientRect();
+      const w = Math.max(40, Math.round(r.width / 2)), h = Math.max(20, Math.round(r.height / 2));
+      if (thumb.width !== w || thumb.height !== h) { thumb.width = w; thumb.height = h; }
+      const src = cfg.thumb, k = Math.max(w / src.width, h / src.height);
+      const sw = w / k, sh = h / k;
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(src, (src.width - sw) / 2, (src.height - sh) / 2, sw, sh, 0, 0, w, h);
+    }
+    requestAnimationFrame(drawThumb);
   }
+  requestAnimationFrame(drawThumb);
+
+  // ------------------------------------------------------------ the quick card
+  /** @param {{ x: number, y: number, title: string, color?: string, lines?: string[], actions: { label: string, primary?: boolean, danger?: boolean, run: () => void }[] }} o */
+  function showCard(o) {
+    card.textContent = '';
+    const head = el('div', 'sp-card-head');
+    if (o.color) { const d = el('span', 'sp-dot'); d.style.background = o.color; head.append(d); }
+    head.append(el('strong', '', o.title));
+    const x = /** @type {HTMLButtonElement} */ (el('button', 'sp-card-x', '×'));
+    x.type = 'button'; x.setAttribute('aria-label', 'Close');
+    x.addEventListener('click', hideCard);
+    head.append(x);
+    card.append(head);
+    for (const line of o.lines || []) card.append(el('p', 'sp-card-line', line));
+    const row = el('div', 'sp-card-actions');
+    for (const a of o.actions) {
+      const b = /** @type {HTMLButtonElement} */ (el('button', a.primary ? 'primary' : a.danger ? 'danger' : '', a.label));
+      b.type = 'button';
+      b.addEventListener('click', () => { hideCard(); a.run(); });
+      row.append(b);
+    }
+    card.append(row);
+    card.hidden = false;
+    const mr = main.getBoundingClientRect();
+    const w = card.offsetWidth, h = card.offsetHeight;
+    let left = o.x - mr.left + 16, top = o.y - mr.top - 18;
+    if (left + w > mr.width - 8) left = o.x - mr.left - w - 16;
+    left = Math.max(8, Math.min(left, mr.width - w - 8));
+    top = Math.max(8, Math.min(top, mr.height - h - 8));
+    card.style.left = left + 'px';
+    card.style.top = top + 'px';
+    const first = /** @type {HTMLElement|null} */ (row.querySelector('button'));
+    if (first) first.focus({ preventScroll: true });
+  }
+  function hideCard() { card.hidden = true; }
+  document.addEventListener('pointerdown', (e) => { if (!card.hidden && e.target instanceof Node && !card.contains(e.target)) hideCard(); }, true);
+
   wide.addEventListener('change', apply);
+  setInterval(() => { if (isOpen) renderSections(); }, 2000);
   apply();
-  return { open: (/** @type {string} */ id) => { current = id; isOpen = true; apply(); }, close: () => { isOpen = false; apply(); } };
+
+  return {
+    /** Opens the menu at a section. @param {string} id @param {number} [lv] */
+    open(id, lv) {
+      const b = boxes.get(id);
+      if (!b) return;
+      if ((b.sec.place || 'main') !== place) { place = b.sec.place || 'main'; if (cfg.onPlace) cfg.onPlace(place); }
+      current = id;
+      isOpen = true;
+      level = lv != null ? lv : (reading(b.sec) ? 2 : 1);
+      remember();
+      apply();
+    },
+    close,
+    isOpen: () => isOpen,
+    place: () => place,
+    setPlace,
+    current: () => current,
+    refresh: apply,
+    card: showCard,
+    hideCard,
+  };
+}
+
+// @ts-check
+// The Supply Depot's money side: a monthly budget, what you spent it on,
+// bills, savings goals and how past months went.
+//
+// Privacy: this is yours alone. It's kept under its own key in this browser,
+// never in the task data, never in exports or sync of your tasks, and nothing
+// here is ever handed to Agent Station's core or its agents. It only leaves
+// this device if you turn on money sync, which seals it with a separate money
+// passphrase that Agent Station never sees, into its own file.
+
+/**
+ * @typedef {{ id: string, name: string, color: string, limit: number, updatedAt: number }} Cat
+ * @typedef {{ id: string, day: string, amount: number, what: string, cat: string, note?: string, bill?: string, goal?: string, updatedAt: number }} Spend
+ * @typedef {{ id: string, day: string, amount: number, what: string, updatedAt: number }} Income
+ * @typedef {{ id: string, name: string, amount: number, dueDay: number, cat: string, paid: Record<string, string>, updatedAt: number }} Bill
+ * @typedef {{ id: string, name: string, target: number, by: string, updatedAt: number }} Goal
+ * @typedef {{ month: string, amount: number, updatedAt: number }} MonthBudget
+ */
+/**
+ * @param {{ toast: (t: string, good?: boolean) => void, open: (section: string) => void,
+ *   sync: { cfg: () => ({ repo: string, token: string } | null), read: (path: string) => Promise<any>, write: (path: string, file: any, sha?: string) => Promise<boolean> } }} deps
+ */
+// eslint-disable-next-line no-unused-vars
+function makeMoney(deps) {
+  const plural = (/** @type {number} */ n, /** @type {string} */ w) => n + ' ' + w + (n === 1 ? '' : 's');
+  const KEY = 'blackhole.money.v1';
+  const MONEY_PATH = 'blackhole-money.json';
+  const AAD = new TextEncoder().encode('blackhole-money-v1');
+  const MAX = 5000;
+  const CAT_COLORS = ['#6fe08a', '#ffe066', '#5ad1ff', '#ff8fc7', '#ff9d3c', '#b49cff', '#7aa7ff', '#e6e6ff'];
+  const DEFAULT_CATS = [['Food', '#ff9d3c'], ['Groceries', '#6fe08a'], ['Gas and transport', '#5ad1ff'], ['Fun', '#ff8fc7'], ['School', '#7aa7ff'], ['Bills', '#b49cff'], ['Other', '#e6e6ff']];
+
+  // ------------------------------------------------------------ helpers
+  const uid = () => { const a = new Uint8Array(8); crypto.getRandomValues(a); return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join(''); };
+  const now = () => Date.now();
+  const pad = (/** @type {number} */ n) => String(n).padStart(2, '0');
+  const dayKey = (/** @type {Date} */ d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const monthKey = (/** @type {Date} */ d) => d.getFullYear() + '-' + pad(d.getMonth() + 1);
+  const today = () => dayKey(new Date());
+  const thisMonth = () => monthKey(new Date());
+  const monthOf = (/** @type {string} */ day) => day.slice(0, 7);
+  const daysIn = (/** @type {string} */ m) => { const [y, mo] = m.split('-').map(Number); return new Date(y, mo, 0).getDate(); };
+  const shiftMonth = (/** @type {string} */ m, /** @type {number} */ by) => { const [y, mo] = m.split('-').map(Number); return monthKey(new Date(y, mo - 1 + by, 1)); };
+  const monthName = (/** @type {string} */ m, /** @type {boolean} */ withYear) => { const [y, mo] = m.split('-').map(Number); return new Date(y, mo - 1, 1).toLocaleString([], withYear ? { month: 'long', year: 'numeric' } : { month: 'long' }); };
+  const dayName = (/** @type {string} */ d) => { const [y, mo, da] = d.split('-').map(Number); return new Date(y, mo - 1, da).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }); };
+  const DAY_RE = /^\d{4}-\d{2}-\d{2}$/, MONTH_RE = /^\d{4}-\d{2}$/;
+  /** Money is kept in cents. @param {number} c */
+  const fmt = (c) => {
+    const cur = data.currency || 'USD';
+    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: cur }).format(c / 100); } catch (e) { return (c < 0 ? '-$' : '$') + (Math.abs(c) / 100).toFixed(2); }
+  };
+  /** Reads what you typed ("12", "12.50", "$1,200") as cents, or null. @param {string} s */
+  const parse = (s) => {
+    const t = String(s || '').replace(/[^0-9.\-]/g, '');
+    if (!t || !/^-?\d*(\.\d{0,2})?$/.test(t)) return null;
+    const v = Math.round(parseFloat(t) * 100);
+    return Number.isFinite(v) && Math.abs(v) <= 1e11 ? v : null;
+  };
+  const clampStr = (/** @type {any} */ s, /** @type {number} */ n) => String(s == null ? '' : s).slice(0, n);
+  /** @param {string} tag @param {Record<string, any>} [attrs] @param {...any} kids */
+  const h = (tag, attrs, ...kids) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k === 'style') e.style.cssText = v; // (a style attribute would be refused by the page's security policy)
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of kids.flat()) if (c != null && c !== false) e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+    return e;
+  };
+  /** Appends, skipping the blanks. @param {HTMLElement} el @param {...any} kids */
+  const add = (el, ...kids) => el.append(...kids.flat().filter((x) => x != null && x !== false));
+  const btn = (/** @type {string} */ label, /** @type {() => void} */ run, /** @type {string} */ cls) => h('button', { type: 'button', class: cls || null, onclick: run }, label);
+
+  // ------------------------------------------------------------ the data
+  /** @type {{ v: number, currency: string, defaultBudget: number, budgets: MonthBudget[], cats: Cat[], spends: Spend[], income: Income[], bills: Bill[], goals: Goal[], tomb: Record<string, number>, sync?: { salt: string } }} */
+  let data = blank();
+  function blank() {
+    return { v: 1, currency: 'USD', defaultBudget: 0, budgets: [], cats: DEFAULT_CATS.map(([n, c]) => ({ id: uid(), name: n, color: c, limit: 0, updatedAt: 0 })), spends: [], income: [], bills: [], goals: [], tomb: {} };
+  }
+  /** Only keeps what looks right, so a damaged or tampered file can't break the page. @param {any} x */
+  function clean(x) {
+    if (!x || typeof x !== 'object') return null;
+    const num = (/** @type {any} */ v) => (Number.isFinite(v) ? Math.round(v) : 0);
+    const id = (/** @type {any} */ v) => (typeof v === 'string' && /^[a-z0-9]{6,32}$/.test(v) ? v : null);
+    const arr = (/** @type {any} */ v) => (Array.isArray(v) ? v.slice(0, MAX) : []);
+    /** @type {any} */ const out = blank();
+    out.currency = typeof x.currency === 'string' && /^[A-Z]{3}$/.test(x.currency) ? x.currency : 'USD';
+    out.defaultBudget = Math.max(0, num(x.defaultBudget));
+    out.budgets = arr(x.budgets).filter((b) => b && MONTH_RE.test(b.month)).map((b) => ({ month: b.month, amount: Math.max(0, num(b.amount)), updatedAt: num(b.updatedAt) }));
+    const cats = arr(x.cats).filter((c) => c && id(c.id) && typeof c.name === 'string').map((c) => ({ id: c.id, name: clampStr(c.name, 40), color: /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : '#e6e6ff', limit: Math.max(0, num(c.limit)), updatedAt: num(c.updatedAt) }));
+    if (cats.length) out.cats = cats;
+    out.spends = arr(x.spends).filter((s) => s && id(s.id) && DAY_RE.test(s.day)).map((s) => ({ id: s.id, day: s.day, amount: num(s.amount), what: clampStr(s.what, 80), cat: id(s.cat) || '', note: clampStr(s.note, 300), bill: id(s.bill) || undefined, goal: id(s.goal) || undefined, updatedAt: num(s.updatedAt) }));
+    out.income = arr(x.income).filter((s) => s && id(s.id) && DAY_RE.test(s.day)).map((s) => ({ id: s.id, day: s.day, amount: Math.max(0, num(s.amount)), what: clampStr(s.what, 80), updatedAt: num(s.updatedAt) }));
+    out.bills = arr(x.bills).filter((b) => b && id(b.id)).map((b) => {
+      /** @type {Record<string, string>} */ const paid = {};
+      if (b.paid && typeof b.paid === 'object') for (const [m, sid] of Object.entries(b.paid)) if (MONTH_RE.test(m) && typeof sid === 'string') paid[m] = sid.slice(0, 32);
+      return { id: b.id, name: clampStr(b.name, 60), amount: Math.max(0, num(b.amount)), dueDay: Math.min(31, Math.max(1, num(b.dueDay) || 1)), cat: id(b.cat) || '', paid, updatedAt: num(b.updatedAt) };
+    });
+    out.goals = arr(x.goals).filter((g) => g && id(g.id)).map((g) => ({ id: g.id, name: clampStr(g.name, 60), target: Math.max(0, num(g.target)), by: MONTH_RE.test(g.by) ? g.by : '', updatedAt: num(g.updatedAt) }));
+    if (x.tomb && typeof x.tomb === 'object') for (const [k, v] of Object.entries(x.tomb).slice(0, MAX * 2)) if (/^[a-z]:[a-z0-9-]{6,32}$/.test(k)) out.tomb[k] = num(v);
+    if (x.sync && typeof x.sync.salt === 'string' && /^[A-Za-z0-9+/=]{16,64}$/.test(x.sync.salt)) out.sync = { salt: x.sync.salt };
+    return out;
+  }
+  let storageOk = true;
+  try { const raw = localStorage.getItem(KEY); if (raw) { const c = clean(JSON.parse(raw)); if (c) data = c; } } catch (e) { storageOk = false; }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(data)); storageOk = true; } catch (e) { storageOk = false; }
+    queueSync();
+  }
+  const catById = (/** @type {string} */ id) => data.cats.find((c) => c.id === id);
+  const catName = (/** @type {string} */ id) => { const c = catById(id); return c ? c.name : 'Other'; };
+  const catColor = (/** @type {string} */ id) => { const c = catById(id); return c ? c.color : '#e6e6ff'; };
+  /** The categories, plus "Savings" for money put into goals. */
+  const SAVINGS = 'savingsjar';
+
+  // ------------------------------------------------------------ sums
+  /** @param {string} m */
+  function budgetFor(m) {
+    const b = data.budgets.find((x) => x.month === m);
+    return b ? b.amount : data.defaultBudget;
+  }
+  /** @param {string} m */
+  const spendsIn = (m) => data.spends.filter((s) => monthOf(s.day) === m);
+  /** @param {string} m */
+  const incomeIn = (m) => data.income.filter((s) => monthOf(s.day) === m);
+  /** @param {string} m */
+  function summary(m) {
+    const spends = spendsIn(m);
+    const spent = spends.reduce((a, s) => a + s.amount, 0);
+    const extra = incomeIn(m).reduce((a, s) => a + s.amount, 0);
+    const total = budgetFor(m) + extra;
+    const unpaid = m >= thisMonth() ? data.bills.filter((b) => !b.paid[m]).reduce((a, b) => a + b.amount, 0) : 0;
+    /** @type {Map<string, number>} */ const byCat = new Map();
+    for (const s of spends) { const k = s.goal ? SAVINGS : s.cat; byCat.set(k, (byCat.get(k) || 0) + s.amount); }
+    return { spends, spent, extra, total, left: total - spent, unpaid, free: total - spent - unpaid, byCat };
+  }
+  /** Total put into a goal so far. @param {string} id */
+  const savedIn = (id) => data.spends.filter((s) => s.goal === id).reduce((a, s) => a + s.amount, 0);
+  /** The next date a bill is due, from today. @param {Bill} b */
+  function nextDue(b) {
+    const d = new Date(), m = thisMonth();
+    const day = Math.min(b.dueDay, daysIn(m));
+    if (!b.paid[m]) return m + '-' + pad(day);
+    const n = shiftMonth(m, 1);
+    return n + '-' + pad(Math.min(b.dueDay, daysIn(n)));
+  }
+  /** How many bills are due within 3 days (or late) and unpaid. */
+  function billsDue() {
+    const m = thisMonth(), t = new Date().getDate();
+    const n = data.bills.filter((b) => !b.paid[m] && Math.min(b.dueDay, daysIn(m)) - t <= 3).length;
+    return n ? String(n) : '';
+  }
+
+  // ------------------------------------------------------------ the panels
+  const budget = h('section', { class: 'panel money', id: 'money-budget' });
+  const spendList = h('section', { class: 'panel money', id: 'money-spend-list' });
+  const spendRead = h('section', { class: 'panel detail money', id: 'money-spend-read', hidden: true });
+  const billsList = h('section', { class: 'panel money', id: 'money-bills-list' });
+  const billsRead = h('section', { class: 'panel detail money', id: 'money-bills-read', hidden: true });
+  const goalsList = h('section', { class: 'panel money', id: 'money-goals-list' });
+  const goalsRead = h('section', { class: 'panel detail money', id: 'money-goals-read', hidden: true });
+  const months = h('section', { class: 'panel money', id: 'money-months' });
+  const setup = h('section', { class: 'panel money', id: 'money-setup' });
+  let viewMonth = thisMonth();
+  /** @type {string|null} */ let editSpend = null;   // id, or 'new'
+  /** @type {string|null} */ let editBill = null;
+  /** @type {string|null} */ let editGoal = null;
+  let lastCat = '';
+
+  const spendAdd = btn('+ SPENT', () => { editSpend = 'new'; renderSpending(); focusFirst(spendRead); }, 'primary');
+  const billsAdd = btn('+ BILL', () => { editBill = 'new'; renderBills(); focusFirst(billsRead); }, 'primary');
+  const goalsAdd = btn('+ GOAL', () => { editGoal = 'new'; renderGoals(); focusFirst(goalsRead); }, 'primary');
+  const focusFirst = (/** @type {HTMLElement} */ box) => { const i = /** @type {HTMLElement|null} */ (box.querySelector('input')); if (i) setTimeout(() => i.focus({ preventScroll: true }), 30); };
+
+  /** A month picker: ‹ October 2026 ›. @param {() => void} again */
+  function monthBar(again) {
+    return h('div', { class: 'mn-month' },
+      btn('‹', () => { viewMonth = shiftMonth(viewMonth, -1); again(); }, 'mini'),
+      h('strong', { text: monthName(viewMonth, true) }),
+      btn('›', () => { viewMonth = shiftMonth(viewMonth, 1); again(); }, 'mini'),
+      viewMonth !== thisMonth() ? btn('THIS MONTH', () => { viewMonth = thisMonth(); again(); }, 'mini') : null);
+  }
+  /** A bar: how much of something is used. @param {number} used @param {number} of @param {string} [color] */
+  function bar(used, of, color) {
+    const k = of > 0 ? Math.min(1, used / of) : used > 0 ? 1 : 0;
+    const over = of > 0 && used > of;
+    return h('div', { class: 'mn-bar' + (over ? ' over' : ''), role: 'img', 'aria-label': of > 0 ? Math.round(used / of * 100) + ' percent used' : 'no limit' },
+      h('i', { style: 'width:' + (k * 100).toFixed(1) + '%;' + (color && !over ? 'background:' + color : '') }));
+  }
+  const field = (/** @type {string} */ label, /** @type {HTMLElement} */ input) => h('label', {}, label, input);
+  const msgEl = () => h('p', { class: 'msg', hidden: true });
+  const setMsg = (/** @type {HTMLElement} */ el, /** @type {string} */ text, /** @type {string} */ kind) => { el.textContent = text; el.className = 'msg ' + (kind || ''); el.hidden = !text; };
+
+  // -------- BUDGET
+  function renderBudget() {
+    const m = viewMonth, s = summary(m), cur = m === thisMonth();
+    budget.textContent = '';
+    budget.append(monthBar(renderBudget));
+    if (!storageOk) budget.append(h('p', { class: 'warn', text: "This view can't save your budget. Open the Black Hole in a normal browser window." }));
+
+    // How much there is to spend.
+    const amt = h('input', { id: 'mn-budget', inputmode: 'decimal', autocomplete: 'off', value: budgetFor(m) ? (budgetFor(m) / 100).toFixed(2) : '', placeholder: 'e.g. 800' });
+    const same = h('input', { type: 'checkbox', id: 'mn-same' });
+    /** @type {HTMLInputElement} */ (same).checked = !data.budgets.some((b) => b.month === m);
+    const out = msgEl();
+    const setRow = h('div', { class: 'mn-set' },
+      field('MONEY TO SPEND IN ' + monthName(m, false).toUpperCase(), amt),
+      h('label', { class: 'check' }, same, 'Same every month'),
+      h('div', { class: 'row' }, btn('SAVE', () => {
+        const v = parse(/** @type {HTMLInputElement} */ (amt).value);
+        if (v == null || v < 0) return setMsg(out, 'Type an amount, like 800 or 800.00.', 'err');
+        if (/** @type {HTMLInputElement} */ (same).checked) { data.defaultBudget = v; data.budgets = data.budgets.filter((b) => b.month !== m); }
+        else { data.budgets = data.budgets.filter((b) => b.month !== m); data.budgets.push({ month: m, amount: v, updatedAt: now() }); }
+        save(); renderBudget();
+      }, 'primary')), out);
+
+    if (!s.total && !s.spent) {
+      budget.append(h('p', { class: 'fine', text: 'Start by typing how much you have to spend this month: your paycheck, allowance or what is left after rent. Then add what you spend as you go (the + SPENT button in SPENDING, or tap the register).' }), setRow);
+      renderSide();
+      return;
+    }
+
+    // The numbers that matter.
+    const over = s.left < 0;
+    const big = h('div', { class: 'mn-big' },
+      h('div', {}, h('span', { class: 'mn-k', text: over ? 'OVER BY' : 'LEFT TO SPEND' }), h('span', { class: 'mn-v' + (over ? ' bad' : ''), text: fmt(Math.abs(s.left)) })),
+      h('div', {}, h('span', { class: 'mn-k', text: 'SPENT' }), h('span', { class: 'mn-v', text: fmt(s.spent) }), h('span', { class: 'mn-of', text: 'of ' + fmt(s.total) })));
+    budget.append(big, bar(s.spent, s.total));
+
+    // This month's outlook.
+    const tips = [];
+    if (cur) {
+      const d = new Date().getDate(), dim = daysIn(m), daysLeft = dim - d + 1;
+      if (s.unpaid > 0) tips.push(['Bills still to pay this month: ' + fmt(s.unpaid) + '. After those, ' + (s.free >= 0 ? fmt(s.free) + ' is free to spend.' : 'you are ' + fmt(-s.free) + ' short.'), s.free < 0 ? 'bad' : '']);
+      const free = Math.max(0, s.free);
+      tips.push(['About ' + fmt(Math.floor(free / daysLeft)) + ' a day for the ' + daysLeft + (daysLeft === 1 ? ' day' : ' days') + ' left (today included).', '']);
+      const pace = d > 2 ? Math.round(s.spent / d * dim) : 0;
+      if (pace && s.total) {
+        if (pace > s.total) tips.push(['At this pace you will spend about ' + fmt(pace) + ', which is ' + fmt(pace - s.total) + ' more than you have.', 'bad']);
+        else tips.push(['At this pace you will finish the month with about ' + fmt(s.total - pace) + ' left.', 'good']);
+      }
+    } else if (m < thisMonth()) {
+      tips.push([over ? 'You went ' + fmt(-s.left) + ' over this month.' : 'You finished with ' + fmt(s.left) + ' left.', over ? 'bad' : 'good']);
+    }
+    const prev = summary(shiftMonth(m, -1));
+    if (prev.spent && s.spent) {
+      const diff = s.spent - prev.spent;
+      tips.push([(cur ? 'So far ' : '') + (diff >= 0 ? fmt(diff) + ' more' : fmt(-diff) + ' less') + ' than all of ' + monthName(shiftMonth(m, -1), false) + ' (' + fmt(prev.spent) + ').', '']);
+    }
+    if (tips.length) budget.append(h('ul', { class: 'mn-tips' }, tips.map(([t, k]) => h('li', { class: k, text: t }))));
+
+    // Where it went.
+    if (s.byCat.size) {
+      budget.append(h('p', { class: 'sub', text: 'WHERE IT WENT' }));
+      const rows = [...s.byCat.entries()].sort((a, b) => b[1] - a[1]);
+      const list = h('ul', { class: 'mn-cats' });
+      for (const [cid, amount] of rows) {
+        const c = catById(cid), lim = c ? c.limit : 0;
+        list.append(h('li', {},
+          h('span', { class: 'mn-cat-name' }, h('span', { class: 'mn-dot', style: 'background:' + (cid === SAVINGS ? '#ffd27a' : catColor(cid)) }), cid === SAVINGS ? 'Savings' : catName(cid)),
+          h('span', { class: 'mn-cat-amt', text: fmt(amount) + (lim ? ' of ' + fmt(lim) : '') }),
+          bar(amount, lim || s.spent, cid === SAVINGS ? '#ffd27a' : catColor(cid))));
+      }
+      budget.append(list);
+      const overCats = rows.filter(([cid, a]) => { const c = catById(cid); return c && c.limit && a > c.limit; });
+      if (overCats.length) budget.append(h('p', { class: 'msg err', text: 'Over the limit: ' + overCats.map(([cid]) => catName(cid)).join(', ') + '.' }));
+    }
+
+    // The biggest purchases.
+    const top = s.spends.filter((x) => !x.goal).sort((a, b) => b.amount - a.amount).slice(0, 3);
+    if (top.length) {
+      budget.append(h('p', { class: 'sub', text: 'BIGGEST' }));
+      budget.append(h('ul', { class: 'mn-top' }, top.map((x) => h('li', {}, h('span', { text: x.what || catName(x.cat) }), h('span', { class: 'mn-cat-amt', text: fmt(x.amount) })))));
+    }
+
+    // Money that came in on top of the budget.
+    budget.append(h('p', { class: 'sub', text: 'EXTRA MONEY IN' }));
+    const inc = incomeIn(m);
+    if (inc.length) budget.append(h('ul', { class: 'mn-top' }, inc.map((x) => h('li', {}, h('span', { text: (x.what || 'Money in') + ' · ' + dayName(x.day) }), h('span', { class: 'mn-cat-amt good', text: '+' + fmt(x.amount) }),
+      btn('REMOVE', () => { data.income = data.income.filter((y) => y.id !== x.id); data.tomb['i:' + x.id] = now(); save(); renderBudget(); }, 'mini')))));
+    const incAmt = h('input', { inputmode: 'decimal', placeholder: 'Amount', 'aria-label': 'Amount of money in', autocomplete: 'off' });
+    const incWhat = h('input', { maxlength: 80, placeholder: 'From (e.g. paycheck, gift)', 'aria-label': 'Where the money came from', autocomplete: 'off' });
+    const incMsg = msgEl();
+    budget.append(h('div', { class: 'add-step mn-inc' }, incAmt, incWhat, btn('ADD', () => {
+      const v = parse(/** @type {HTMLInputElement} */ (incAmt).value);
+      if (!v || v <= 0) return setMsg(incMsg, 'Type how much came in.', 'err');
+      const day = m === thisMonth() ? today() : m + '-01';
+      data.income.push({ id: uid(), day, amount: v, what: clampStr(/** @type {HTMLInputElement} */ (incWhat).value.trim(), 80), updatedAt: now() });
+      save(); renderBudget();
+    })), incMsg);
+
+    budget.append(h('p', { class: 'sub', text: 'CHANGE THE BUDGET' }), setRow);
+    renderSide();
+  }
+
+  // -------- SPENDING
+  function renderSpending() {
+    const m = viewMonth;
+    spendList.textContent = '';
+    spendList.append(monthBar(() => { renderSpending(); renderBudget(); }));
+    const list = spendsIn(m).slice().sort((a, b) => (a.day === b.day ? b.updatedAt - a.updatedAt : a.day < b.day ? 1 : -1));
+    const s = summary(m);
+    spendList.append(h('p', { class: 'fine', text: list.length ? plural(list.length, 'purchase') + ' · ' + fmt(s.spent) + ' spent' : 'Nothing spent in ' + monthName(m, false) + ' yet. Press + SPENT to add something.' }));
+    let lastDay = '';
+    let ul = null;
+    for (const x of list) {
+      if (x.day !== lastDay) { spendList.append(h('p', { class: 'sub', text: dayName(x.day).toUpperCase() })); ul = h('ul', { class: 'list' }); spendList.append(ul); lastDay = x.day; }
+      const b = h('button', { type: 'button', class: editSpend === x.id ? 'sel' : null, onclick: () => { editSpend = x.id; renderSpending(); } },
+        h('span', { class: 'dot', style: 'background:' + (x.goal ? '#ffd27a' : catColor(x.cat)) }),
+        h('span', { class: 't-title mn-row' }, h('span', { text: x.what || (x.goal ? 'Savings' : catName(x.cat)) }), h('span', { class: 'mn-amt', text: fmt(x.amount) })),
+        h('span', { class: 't-meta', text: x.goal ? 'Savings' : catName(x.cat) + (x.bill ? ' · bill' : '') }));
+      if (ul) ul.append(h('li', {}, b));
+    }
+    // The form.
+    spendRead.textContent = '';
+    const cur = editSpend && editSpend !== 'new' ? data.spends.find((y) => y.id === editSpend) : null;
+    if (!editSpend || (editSpend !== 'new' && !cur)) { spendRead.hidden = true; editSpend = null; renderSide(); return; }
+    const amt = h('input', { id: 'mn-s-amt', inputmode: 'decimal', autocomplete: 'off', placeholder: '0.00', value: cur ? (cur.amount / 100).toFixed(2) : '' });
+    const what = h('input', { id: 'mn-s-what', maxlength: 80, autocomplete: 'off', placeholder: 'e.g. Lunch with Sam', value: cur ? cur.what : '', list: 'mn-whats' });
+    const whats = h('datalist', { id: 'mn-whats' }, [...new Set(data.spends.slice(-200).map((y) => y.what).filter(Boolean))].slice(-40).map((w) => h('option', { value: w })));
+    const cat = h('select', { id: 'mn-s-cat' }, data.cats.map((c) => h('option', { value: c.id, text: c.name })));
+    /** @type {HTMLSelectElement} */ (cat).value = cur ? cur.cat : (lastCat && catById(lastCat) ? lastCat : data.cats[0].id);
+    const day = h('input', { id: 'mn-s-day', type: 'date', value: cur ? cur.day : (viewMonth === thisMonth() ? today() : viewMonth + '-01') });
+    const note = h('input', { id: 'mn-s-note', maxlength: 300, autocomplete: 'off', placeholder: 'Optional', value: cur && cur.note ? cur.note : '' });
+    const out = msgEl();
+    const doSave = () => {
+      const v = parse(/** @type {HTMLInputElement} */ (amt).value);
+      if (v == null || v === 0) return setMsg(out, 'Type how much it cost, like 12.50.', 'err');
+      const d = /** @type {HTMLInputElement} */ (day).value;
+      if (!DAY_RE.test(d)) return setMsg(out, 'Pick the day you spent it.', 'err');
+      const rec = { day: d, amount: v, what: /** @type {HTMLInputElement} */ (what).value.trim().slice(0, 80), cat: /** @type {HTMLSelectElement} */ (cat).value, note: /** @type {HTMLInputElement} */ (note).value.trim().slice(0, 300), updatedAt: now() };
+      lastCat = rec.cat;
+      if (cur) Object.assign(cur, rec);
+      else data.spends.push(Object.assign({ id: uid() }, rec));
+      if (data.spends.length > MAX) data.spends.splice(0, data.spends.length - MAX);
+      save();
+      deps.toast(cur ? 'Saved.' : 'Added ' + fmt(v) + (rec.what ? ' for ' + rec.what : '') + '.', true);
+      editSpend = cur ? cur.id : 'new';
+      viewMonth = monthOf(d);
+      renderAll();
+      if (!cur) focusFirst(spendRead);
+    };
+    const enter = (/** @type {KeyboardEvent} */ e) => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } };
+    for (const i of [amt, what, note]) i.addEventListener('keydown', enter);
+    const del = cur ? btn('DELETE', () => {
+      if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = 'SURE?'; del.classList.add('armed'); setTimeout(() => { del.dataset.armed = ''; del.textContent = 'DELETE'; del.classList.remove('armed'); }, 3000); return; }
+      data.spends = data.spends.filter((y) => y.id !== cur.id);
+      data.tomb['s:' + cur.id] = now();
+      for (const b of data.bills) for (const [mm, sid] of Object.entries(b.paid)) if (sid === cur.id) delete b.paid[mm];
+      editSpend = null; save(); renderAll();
+    }, 'danger') : null;
+    add(spendRead, 
+      h('div', { class: 'detail-head' }, h('h2', { text: cur ? 'PURCHASE' : 'ADD WHAT YOU SPENT' })),
+      h('div', { class: 'grid2' }, field('AMOUNT', amt), field('DAY', day)),
+      field('WHAT', what), whats,
+      field('CATEGORY', cat),
+      field('NOTE', note),
+      out,
+      h('div', { class: 'row' }, btn(cur ? 'SAVE' : 'ADD', doSave, 'primary'), cur ? btn('ADD ANOTHER', () => { editSpend = 'new'; renderSpending(); focusFirst(spendRead); }) : null, del),
+      cur && cur.bill ? h('p', { class: 'fine', text: 'Added when you marked a bill paid.' }) : null,
+      cur && cur.goal ? h('p', { class: 'fine', text: 'Money you put into a savings goal.' }) : null);
+    spendRead.hidden = false;
+    renderSide();
+  }
+
+  // -------- BILLS
+  function renderBills() {
+    const m = thisMonth();
+    billsList.textContent = '';
+    const list = data.bills.slice().sort((a, b) => (nextDue(a) < nextDue(b) ? -1 : 1));
+    const unpaid = data.bills.filter((b) => !b.paid[m]).reduce((a, b) => a + b.amount, 0);
+    const total = data.bills.reduce((a, b) => a + b.amount, 0);
+    billsList.append(h('p', { class: 'fine', text: data.bills.length ? fmt(total) + ' a month in bills · ' + fmt(unpaid) + ' still to pay in ' + monthName(m, false) : 'Add the things you pay every month (rent, phone, subscriptions) so the budget can set that money aside.' }));
+    const ul = h('ul', { class: 'list' });
+    const t = new Date().getDate();
+    for (const b of list) {
+      const paid = !!b.paid[m];
+      const dd = Math.min(b.dueDay, daysIn(m));
+      const status = paid ? 'Paid for ' + monthName(m, false) : dd < t ? 'Late: was due ' + dayName(m + '-' + pad(dd)) : dd - t <= 3 ? 'Due ' + (dd === t ? 'today' : dayName(m + '-' + pad(dd))) : 'Due ' + dayName(m + '-' + pad(dd));
+      ul.append(h('li', {}, h('button', { type: 'button', class: editBill === b.id ? 'sel' : null, onclick: () => { editBill = b.id; renderBills(); } },
+        h('span', { class: 'dot', style: 'background:' + (paid ? '#3a3f5a' : !paid && dd - t <= 3 ? '#ff9d3c' : catColor(b.cat)) }),
+        h('span', { class: 't-title mn-row' }, h('span', { text: b.name }), h('span', { class: 'mn-amt', text: fmt(b.amount) })),
+        h('span', { class: 't-meta' + (!paid && dd < t ? ' bad' : ''), text: status }))));
+    }
+    billsList.append(ul);
+
+    billsRead.textContent = '';
+    const cur = editBill && editBill !== 'new' ? data.bills.find((x) => x.id === editBill) : null;
+    if (!editBill || (editBill !== 'new' && !cur)) { billsRead.hidden = true; editBill = null; renderSide(); return; }
+    const name = h('input', { id: 'mn-b-name', maxlength: 60, autocomplete: 'off', placeholder: 'e.g. Phone', value: cur ? cur.name : '' });
+    const amt = h('input', { id: 'mn-b-amt', inputmode: 'decimal', autocomplete: 'off', placeholder: '0.00', value: cur ? (cur.amount / 100).toFixed(2) : '' });
+    const day = h('input', { id: 'mn-b-day', type: 'number', min: 1, max: 31, inputmode: 'numeric', value: cur ? String(cur.dueDay) : '1' });
+    const cat = h('select', { id: 'mn-b-cat' }, data.cats.map((c) => h('option', { value: c.id, text: c.name })));
+    const billsCat = data.cats.find((c) => /bill/i.test(c.name));
+    /** @type {HTMLSelectElement} */ (cat).value = cur ? cur.cat : billsCat ? billsCat.id : data.cats[0].id;
+    const out = msgEl();
+    const doSave = () => {
+      const n = /** @type {HTMLInputElement} */ (name).value.trim();
+      const v = parse(/** @type {HTMLInputElement} */ (amt).value);
+      const d = Number(/** @type {HTMLInputElement} */ (day).value);
+      if (!n) return setMsg(out, 'Give the bill a name.', 'err');
+      if (v == null || v <= 0) return setMsg(out, 'Type how much it is each month.', 'err');
+      if (!(d >= 1 && d <= 31)) return setMsg(out, 'Pick a day of the month, 1 to 31.', 'err');
+      const rec = { name: n.slice(0, 60), amount: v, dueDay: Math.round(d), cat: /** @type {HTMLSelectElement} */ (cat).value, updatedAt: now() };
+      if (cur) Object.assign(cur, rec);
+      else { const nb = Object.assign({ id: uid(), paid: {} }, rec); data.bills.push(nb); editBill = nb.id; }
+      save(); renderAll();
+    };
+    const parts = [
+      h('div', { class: 'detail-head' }, h('h2', { text: cur ? cur.name.toUpperCase() : 'NEW BILL' })),
+      field('NAME', name), h('div', { class: 'grid2' }, field('AMOUNT', amt), field('DUE ON DAY', day)), field('CATEGORY', cat), out,
+      h('div', { class: 'row' }, btn(cur ? 'SAVE' : 'ADD BILL', doSave, cur ? '' : 'primary')),
+    ];
+    if (cur) {
+      const paidId = cur.paid[m];
+      parts.splice(1, 0, h('p', { class: 'mn-paid' + (paidId ? ' good' : ''), text: paidId ? 'Paid for ' + monthName(m, false) + '.' : fmt(cur.amount) + ' due ' + dayName(nextDue(cur)) + '.' }),
+        h('div', { class: 'row' }, paidId
+          ? btn('NOT PAID AFTER ALL', () => { data.spends = data.spends.filter((s) => s.id !== paidId); data.tomb['s:' + paidId] = now(); delete cur.paid[m]; cur.updatedAt = now(); save(); renderAll(); })
+          : btn('MARK PAID', () => {
+            const s = { id: uid(), day: today(), amount: cur.amount, what: cur.name, cat: cur.cat, bill: cur.id, updatedAt: now() };
+            data.spends.push(s); cur.paid[m] = s.id; cur.updatedAt = now(); save(); deps.toast(cur.name + ' marked paid and added to spending.', true); renderAll();
+          }, 'primary')));
+      const del = btn('DELETE BILL', () => {
+        if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = 'SURE?'; del.classList.add('armed'); setTimeout(() => { del.dataset.armed = ''; del.textContent = 'DELETE BILL'; del.classList.remove('armed'); }, 3000); return; }
+        data.bills = data.bills.filter((x) => x.id !== cur.id); data.tomb['b:' + cur.id] = now(); editBill = null; save(); renderAll();
+      }, 'danger');
+      parts.push(h('div', { class: 'row' }, del), h('p', { class: 'fine', text: 'MARK PAID adds it to SPENDING for this month. Payments you already made stay in spending if you delete the bill.' }));
+    }
+    add(billsRead, ...parts);
+    billsRead.hidden = false;
+    renderSide();
+  }
+
+  // -------- SAVINGS GOALS
+  function renderGoals() {
+    goalsList.textContent = '';
+    if (!data.goals.length) goalsList.append(h('p', { class: 'fine', text: 'Saving for something? Add a goal and put money toward it. It counts as spending for the month you put it in, so your budget stays honest.' }));
+    const ul = h('ul', { class: 'list' });
+    for (const g of data.goals) {
+      const saved = savedIn(g.id);
+      ul.append(h('li', {}, h('button', { type: 'button', class: editGoal === g.id ? 'sel' : null, onclick: () => { editGoal = g.id; renderGoals(); } },
+        h('span', { class: 'dot', style: 'background:#ffd27a' }),
+        h('span', { class: 't-title mn-row' }, h('span', { text: g.name }), h('span', { class: 'mn-amt', text: g.target ? Math.min(100, Math.round(saved / g.target * 100)) + '%' : fmt(saved) })),
+        h('span', { class: 't-meta', text: fmt(saved) + (g.target ? ' of ' + fmt(g.target) : ' saved') + (g.by ? ' · by ' + monthName(g.by, true) : '') }))));
+    }
+    goalsList.append(ul);
+
+    goalsRead.textContent = '';
+    const cur = editGoal && editGoal !== 'new' ? data.goals.find((x) => x.id === editGoal) : null;
+    if (!editGoal || (editGoal !== 'new' && !cur)) { goalsRead.hidden = true; editGoal = null; renderSide(); return; }
+    const name = h('input', { id: 'mn-g-name', maxlength: 60, autocomplete: 'off', placeholder: 'e.g. New laptop', value: cur ? cur.name : '' });
+    const target = h('input', { id: 'mn-g-target', inputmode: 'decimal', autocomplete: 'off', placeholder: '0.00', value: cur && cur.target ? (cur.target / 100).toFixed(2) : '' });
+    const by = h('input', { id: 'mn-g-by', type: 'month', value: cur ? cur.by : '' });
+    const out = msgEl();
+    const doSave = () => {
+      const n = /** @type {HTMLInputElement} */ (name).value.trim();
+      const v = parse(/** @type {HTMLInputElement} */ (target).value);
+      const b = /** @type {HTMLInputElement} */ (by).value;
+      if (!n) return setMsg(out, 'Give the goal a name.', 'err');
+      if (v == null || v < 0) return setMsg(out, 'Type the amount you want to save, like 600.', 'err');
+      const rec = { name: n.slice(0, 60), target: v, by: MONTH_RE.test(b) ? b : '', updatedAt: now() };
+      if (cur) Object.assign(cur, rec);
+      else { const g = Object.assign({ id: uid() }, rec); data.goals.push(g); editGoal = g.id; }
+      save(); renderAll();
+    };
+    const parts = [h('div', { class: 'detail-head' }, h('h2', { text: cur ? cur.name.toUpperCase() : 'NEW SAVINGS GOAL' }))];
+    if (cur) {
+      const saved = savedIn(cur.id);
+      parts.push(h('div', { class: 'mn-big' }, h('div', {}, h('span', { class: 'mn-k', text: 'SAVED' }), h('span', { class: 'mn-v', text: fmt(saved) }), cur.target ? h('span', { class: 'mn-of', text: 'of ' + fmt(cur.target) }) : null)),
+        cur.target ? bar(saved, cur.target, '#ffd27a') : null);
+      if (cur.target && cur.by && saved < cur.target) {
+        const monthsLeft = Math.max(1, (Number(cur.by.slice(0, 4)) - new Date().getFullYear()) * 12 + Number(cur.by.slice(5)) - (new Date().getMonth() + 1) + 1);
+        parts.push(h('p', { class: 'fine', text: 'Put in about ' + fmt(Math.ceil((cur.target - saved) / monthsLeft)) + ' a month to reach it by ' + monthName(cur.by, true) + '.' }));
+      } else if (cur.target && saved >= cur.target) parts.push(h('p', { class: 'msg ok', text: 'You reached this goal.' }));
+      const put = h('input', { id: 'mn-g-put', inputmode: 'decimal', autocomplete: 'off', placeholder: 'Amount', 'aria-label': 'Amount to put in' });
+      const putMsg = msgEl();
+      parts.push(h('p', { class: 'sub', text: 'PUT MONEY IN (OR TAKE IT OUT WITH A MINUS)' }), h('div', { class: 'add-step' }, put, btn('PUT IN', () => {
+        const v = parse(/** @type {HTMLInputElement} */ (put).value);
+        if (!v) return setMsg(putMsg, 'Type an amount, like 25.', 'err');
+        data.spends.push({ id: uid(), day: today(), amount: v, what: 'Savings: ' + cur.name, cat: '', goal: cur.id, updatedAt: now() });
+        save(); deps.toast((v > 0 ? 'Put ' + fmt(v) + ' into ' : 'Took ' + fmt(-v) + ' out of ') + cur.name + '.', true); renderAll();
+      }, 'primary')), putMsg);
+    }
+    parts.push(h('p', { class: 'sub', text: cur ? 'EDIT' : '' }), field('NAME', name), h('div', { class: 'grid2' }, field('TARGET', target), field('BY (OPTIONAL)', by)), out,
+      h('div', { class: 'row' }, btn(cur ? 'SAVE' : 'ADD GOAL', doSave, cur ? '' : 'primary')));
+    if (cur) {
+      const del = btn('DELETE GOAL', () => {
+        if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = 'SURE?'; del.classList.add('armed'); setTimeout(() => { del.dataset.armed = ''; del.textContent = 'DELETE GOAL'; del.classList.remove('armed'); }, 3000); return; }
+        data.goals = data.goals.filter((x) => x.id !== cur.id); data.tomb['g:' + cur.id] = now(); editGoal = null; save(); renderAll();
+      }, 'danger');
+      parts.push(h('div', { class: 'row' }, del), h('p', { class: 'fine', text: 'Deleting a goal keeps the money you put in listed in SPENDING.' }));
+    }
+    add(goalsRead, ...parts);
+    goalsRead.hidden = false;
+    renderSide();
+  }
+
+  // -------- PAST MONTHS
+  function renderMonths() {
+    months.textContent = '';
+    const seen = new Set([thisMonth(), ...data.spends.map((s) => monthOf(s.day)), ...data.income.map((s) => monthOf(s.day)), ...data.budgets.map((b) => b.month)]);
+    const list = [...seen].filter((m) => m <= thisMonth()).sort().reverse().slice(0, 24);
+    const table = h('table', { class: 'mn-table' },
+      h('thead', {}, h('tr', {}, ['MONTH', 'HAD', 'SPENT', 'LEFT', 'MOST ON'].map((t) => h('th', { scope: 'col', text: t })))),
+      h('tbody', {}, list.map((m) => {
+        const s = summary(m);
+        const top = [...s.byCat.entries()].sort((a, b) => b[1] - a[1])[0];
+        return h('tr', { class: m === thisMonth() ? 'now' : null },
+          h('th', { scope: 'row' }, btn(monthName(m, true), () => { viewMonth = m; renderAll(); deps.open('budget'); }, 'linkish')),
+          h('td', { text: s.total ? fmt(s.total) : '—' }), h('td', { text: fmt(s.spent) }),
+          h('td', { class: s.total && s.left < 0 ? 'bad' : s.total ? 'good' : null, text: s.total ? (s.left < 0 ? '-' + fmt(-s.left) : fmt(s.left)) : '—' }),
+          h('td', { text: top ? (top[0] === SAVINGS ? 'Savings' : catName(top[0])) : '—' }));
+      })));
+    months.append(h('div', { class: 'mn-table-wrap' }, table));
+    const done = list.filter((m) => m < thisMonth()).map(summary).filter((s) => s.total);
+    if (done.length >= 2) {
+      const avg = Math.round(done.reduce((a, s) => a + s.spent, 0) / done.length);
+      const under = done.filter((s) => s.left >= 0).length;
+      months.append(h('p', { class: 'fine', text: 'On average you spend ' + fmt(avg) + ' a month, and stayed within budget ' + under + ' of the last ' + done.length + ' months.' }));
+    }
+  }
+
+  // -------- MONEY SETTINGS
+  function renderSetup() {
+    setup.textContent = '';
+    // Categories
+    setup.append(h('p', { class: 'sub', text: 'CATEGORIES AND MONTHLY LIMITS' }), h('p', { class: 'fine', text: 'A limit is optional. The budget warns you when a category goes over it.' }));
+    const ul = h('ul', { class: 'mn-cat-edit' });
+    for (const c of data.cats) {
+      const nm = h('input', { maxlength: 40, value: c.name, 'aria-label': 'Category name' });
+      const lim = h('input', { inputmode: 'decimal', value: c.limit ? (c.limit / 100).toFixed(2) : '', placeholder: 'No limit', 'aria-label': 'Monthly limit for ' + c.name });
+      const used = data.spends.some((s) => s.cat === c.id) || data.bills.some((b) => b.cat === c.id);
+      const save1 = () => {
+        const n = /** @type {HTMLInputElement} */ (nm).value.trim(); const l = parse(/** @type {HTMLInputElement} */ (lim).value);
+        if (n) c.name = n.slice(0, 40);
+        c.limit = l && l > 0 ? l : 0; c.updatedAt = now(); save(); renderAll();
+      };
+      nm.addEventListener('change', save1); lim.addEventListener('change', save1);
+      ul.append(h('li', {}, h('span', { class: 'mn-dot', style: 'background:' + c.color }), nm, lim,
+        data.cats.length > 1 ? btn(used ? 'MERGE' : 'REMOVE', () => {
+          const into = data.cats.find((x) => x.id !== c.id && /other/i.test(x.name)) || data.cats.find((x) => x.id !== c.id);
+          if (!into) return;
+          for (const s of data.spends) if (s.cat === c.id) { s.cat = into.id; s.updatedAt = now(); }
+          for (const b of data.bills) if (b.cat === c.id) { b.cat = into.id; b.updatedAt = now(); }
+          data.cats = data.cats.filter((x) => x.id !== c.id); data.tomb['c:' + c.id] = now(); save(); renderAll();
+          deps.toast(used ? c.name + ' merged into ' + into.name + '.' : c.name + ' removed.', true);
+        }, 'mini') : null));
+    }
+    setup.append(ul);
+    const newCat = h('input', { maxlength: 40, placeholder: 'New category', 'aria-label': 'New category name' });
+    setup.append(h('div', { class: 'add-step' }, newCat, btn('ADD', () => {
+      const n = /** @type {HTMLInputElement} */ (newCat).value.trim();
+      if (!n || data.cats.length >= 30) return;
+      data.cats.push({ id: uid(), name: n.slice(0, 40), color: CAT_COLORS[data.cats.length % CAT_COLORS.length], limit: 0, updatedAt: now() });
+      save(); renderAll();
+    })));
+
+    // Currency
+    const curSel = h('select', { id: 'mn-currency' }, ['USD', 'CAD', 'EUR', 'GBP', 'AUD', 'MXN', 'JPY', 'INR'].map((c) => h('option', { value: c, text: c })));
+    /** @type {HTMLSelectElement} */ (curSel).value = data.currency;
+    curSel.addEventListener('change', () => { data.currency = /** @type {HTMLSelectElement} */ (curSel).value; save(); renderAll(); });
+    setup.append(h('p', { class: 'sub', text: 'CURRENCY' }), curSel);
+
+    // Privacy and sync
+    setup.append(h('p', { class: 'sub', text: 'WHO CAN SEE THIS' }),
+      h('p', { class: 'fine mn-private', text: 'Only you. Your money is kept on this device, apart from your tasks. It is never sent to Agent Station or its agents (on the Mac, the window never hands it to the app), never included in task sync or task backups, and never sent anywhere unless you turn on money sync below.' }));
+    setup.append(syncBox());
+
+    // Backup
+    const file = /** @type {HTMLInputElement} */ (h('input', { type: 'file', accept: 'application/json,.json', hidden: true }));
+    const bMsg = msgEl();
+    file.addEventListener('change', () => {
+      const f = file.files && file.files[0];
+      file.value = '';
+      if (!f) return;
+      if (f.size > 5 * 1024 * 1024) return setMsg(bMsg, 'That file is too big to be a money backup.', 'err');
+      const r = new FileReader();
+      r.onload = () => {
+        let c = null;
+        try { const j = JSON.parse(String(r.result)); c = j && j.app === 'black-hole-money' ? clean(j.data) : null; } catch (e) { c = null; }
+        if (!c) return setMsg(bMsg, "That file isn't a money backup.", 'err');
+        const keepSync = data.sync;
+        data = merge(data, c);
+        if (keepSync) data.sync = keepSync;
+        save(); renderAll(); setMsg(bMsg, 'Backup added. Anything already here was kept.', 'ok');
+      };
+      r.readAsText(f);
+    });
+    setup.append(h('p', { class: 'sub', text: 'BACKUP' }),
+      h('div', { class: 'row' },
+        btn('EXPORT MONEY', () => {
+          const copy = JSON.parse(JSON.stringify(data)); delete copy.sync;
+          const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'black-hole-money', v: 1, exportedAt: new Date().toISOString(), data: copy }, null, 2)], { type: 'application/json' }));
+          const a = document.createElement('a'); a.href = url; a.download = 'black-hole-money-' + today() + '.json'; document.body.append(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }),
+        btn('IMPORT', () => file.click())),
+      file, bMsg,
+      h('p', { class: 'fine', text: 'The export is a plain file with your amounts in it. Keep it somewhere private.' }));
+
+    const wipe = btn('ERASE ALL MONEY DATA ON THIS DEVICE', () => {
+      if (wipe.dataset.armed !== '1') { wipe.dataset.armed = '1'; wipe.textContent = 'SURE? THIS CAN\'T BE UNDONE'; wipe.classList.add('armed'); setTimeout(() => { wipe.dataset.armed = ''; wipe.textContent = 'ERASE ALL MONEY DATA ON THIS DEVICE'; wipe.classList.remove('armed'); }, 4000); return; }
+      data = blank(); syncKeyMem = null; keyStore('del');
+      try { localStorage.removeItem(KEY); } catch (e) { /* fine */ }
+      editSpend = editBill = editGoal = null; renderAll(); deps.toast('Money data erased on this device.', true);
+    }, 'danger');
+    setup.append(h('div', { class: 'row' }, wipe));
+  }
+
+  // ------------------------------------------------------------ money sync (optional)
+  // Its own file, its own passphrase. Agent Station only ever holds the key for
+  // your task sync, which can't open this file.
+  /** @type {CryptoKey|null} */ let syncKeyMem = null;
+  let syncState = '', syncBusy = false, syncTimer = 0;
+  const te = new TextEncoder(), td = new TextDecoder();
+  const toB64 = (/** @type {Uint8Array} */ u) => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, Array.from(u.subarray(i, i + 0x8000))); return btoa(s); };
+  const fromB64 = (/** @type {string} */ s) => { const b = atob(String(s)); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  function idb() {
+    return new Promise((resolve, reject) => { const r = indexedDB.open('blackhole-money', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+  }
+  /** @param {'get'|'put'|'del'} op @param {any} [v] */
+  async function keyStore(op, v) {
+    try {
+      const db = /** @type {IDBDatabase} */ (await idb());
+      return await new Promise((resolve) => {
+        const st = db.transaction('k', op === 'get' ? 'readonly' : 'readwrite').objectStore('k');
+        const req = op === 'get' ? st.get('key') : op === 'put' ? st.put(v, 'key') : st.delete('key');
+        req.onsuccess = () => resolve(op === 'get' ? req.result || null : true);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) { return null; }
+  }
+  /** @param {string} pass @param {Uint8Array} salt */
+  async function deriveMoneyKey(pass, salt) {
+    const base = await crypto.subtle.importKey('raw', te.encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  /** Record by record: the newest edit wins; deletes are remembered. @param {any} a @param {any} b */
+  function merge(a, b) {
+    const tomb = Object.assign({}, a.tomb);
+    for (const [k, v] of Object.entries(b.tomb || {})) if (!tomb[k] || v > tomb[k]) tomb[k] = v;
+    /** @param {string} kind @param {any[]} la @param {any[]} lb */
+    const pick = (kind, la, lb) => {
+      const m = new Map();
+      for (const r of la) m.set(r.id, r);
+      for (const r of lb) { const c = m.get(r.id); if (!c || (r.updatedAt || 0) > (c.updatedAt || 0)) m.set(r.id, r); }
+      return [...m.values()].filter((r) => { const t = tomb[kind + ':' + r.id]; return !t || t < (r.updatedAt || 0); });
+    };
+    const months = new Map();
+    for (const x of [...a.budgets, ...b.budgets]) { const c = months.get(x.month); if (!c || x.updatedAt > c.updatedAt) months.set(x.month, x); }
+    return {
+      v: 1, currency: b.currency || a.currency, defaultBudget: Math.max(a.defaultBudget || 0, 0) || b.defaultBudget || 0,
+      budgets: [...months.values()], cats: pick('c', a.cats, b.cats), spends: pick('s', a.spends, b.spends), income: pick('i', a.income, b.income),
+      bills: pick('b', a.bills, b.bills), goals: pick('g', a.goals, b.goals), tomb, sync: a.sync,
+    };
+  }
+  function queueSync() { if (!syncKeyMem) return; clearTimeout(syncTimer); syncTimer = window.setTimeout(syncMoney, 2500); }
+  async function syncMoney() {
+    const cfg = deps.sync.cfg();
+    if (!cfg || !syncKeyMem || syncBusy) return;
+    syncBusy = true; syncState = 'Syncing...'; renderSyncState();
+    try {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const remote = await deps.sync.read(MONEY_PATH);
+        let theirs = null;
+        if (remote) {
+          const f = remote.file;
+          if (!f || f.format !== 'blackhole-money' || !data.sync || f.salt !== data.sync.salt) throw new Error('The money file on GitHub was set up with a different money passphrase. Turn money sync off and on again.');
+          let plain;
+          try { plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(f.iv), additionalData: AAD }, syncKeyMem, fromB64(f.data)); } catch (e) { throw new Error("Couldn't unlock the synced money data. Check the money passphrase."); }
+          theirs = clean(JSON.parse(td.decode(plain)));
+        }
+        const mine = theirs ? merge(data, theirs) : data;
+        mine.sync = data.sync;
+        data = mine;
+        try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* shown elsewhere */ }
+        const copy = JSON.parse(JSON.stringify(data)); delete copy.sync;
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: AAD }, syncKeyMem, te.encode(JSON.stringify(copy))));
+        const file = { format: 'blackhole-money', v: 1, salt: data.sync ? data.sync.salt : '', iv: toB64(iv), data: toB64(ct) };
+        if (await deps.sync.write(MONEY_PATH, file, remote ? remote.sha : undefined)) { syncState = 'Synced ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.'; break; }
+      }
+      renderAll();
+    } catch (e) {
+      syncState = (e && /** @type {any} */ (e).message) || 'Money sync failed.';
+    } finally { syncBusy = false; renderSyncState(); }
+  }
+  /** @type {HTMLElement|null} */ let syncStateEl = null;
+  function renderSyncState() { if (syncStateEl) syncStateEl.textContent = syncState; }
+  function syncBox() {
+    const box = h('div', { class: 'mn-sync' });
+    box.append(h('p', { class: 'sub', text: 'SYNC MONEY BETWEEN MY DEVICES (OPTIONAL)' }));
+    const cfg = deps.sync.cfg();
+    syncStateEl = h('p', { class: 'msg' });
+    if (!cfg) {
+      box.append(h('p', { class: 'fine', text: 'Off. To use it, first connect SYNC ACROSS DEVICES (under MORE). Until then your money stays on this device only.' }));
+      return box;
+    }
+    if (syncKeyMem) {
+      box.append(syncStateEl, h('div', { class: 'row' }, btn('SYNC NOW', syncMoney), btn('TURN OFF ON THIS DEVICE', async () => { syncKeyMem = null; await keyStore('del'); delete data.sync; save(); syncState = ''; renderSetup(); }, 'danger')));
+      renderSyncState();
+    } else {
+      const pass = h('input', { type: 'password', id: 'mn-pass', autocomplete: 'new-password', placeholder: 'at least 12 characters', 'aria-label': 'Money passphrase' });
+      const out = msgEl();
+      box.append(h('p', { class: 'fine', text: 'Use a money passphrase that is different from your sync passphrase, and never type it into Agent Station. Your money is sealed with it before it goes to GitHub, in its own file, so neither GitHub nor Agent Station can read it. Use the same money passphrase on each device.' }),
+        field('MONEY PASSPHRASE', pass), out,
+        h('div', { class: 'row' }, btn('TURN ON', async () => {
+          const p = /** @type {HTMLInputElement} */ (pass).value;
+          if (p.length < 12) return setMsg(out, 'Use at least 12 characters.', 'err');
+          setMsg(out, 'Setting up... (this takes a few seconds)', '');
+          try {
+            const remote = await deps.sync.read(MONEY_PATH);
+            let salt;
+            if (remote && remote.file && remote.file.format === 'blackhole-money' && typeof remote.file.salt === 'string') salt = remote.file.salt;
+            else salt = toB64(crypto.getRandomValues(new Uint8Array(16)));
+            const key = await deriveMoneyKey(p, fromB64(salt));
+            if (remote && remote.file && remote.file.format === 'blackhole-money') {
+              try { await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(remote.file.iv), additionalData: AAD }, key, fromB64(remote.file.data)); } catch (e) { return setMsg(out, "That passphrase doesn't open the money already synced from another device.", 'err'); }
+            }
+            data.sync = { salt };
+            syncKeyMem = key;
+            await keyStore('put', key);
+            save();
+            renderSetup();
+            syncMoney();
+          } catch (e) { setMsg(out, (e && /** @type {any} */ (e).message) || "Couldn't turn on money sync.", 'err'); }
+        }, 'primary')));
+    }
+    return box;
+  }
+  (async () => {
+    if (!data.sync) return;
+    const k = await keyStore('get');
+    if (k) { syncKeyMem = /** @type {CryptoKey} */ (k); syncMoney(); }
+  })();
+  setInterval(() => { if (syncKeyMem && document.visibilityState === 'visible') syncMoney(); }, 5 * 60 * 1000);
+
+  // ------------------------------------------------------------ the sidebar's own counts
+  let renderSide = () => {};
+  function renderAll() { renderBudget(); renderSpending(); renderBills(); renderGoals(); renderMonths(); renderSetup(); }
+  renderAll();
+  // Keep "today" right when the page stays open past midnight.
+  let lastDay = today();
+  setInterval(() => { if (today() !== lastDay) { lastDay = today(); if (viewMonth < thisMonth() && viewMonth === shiftMonth(thisMonth(), -1)) viewMonth = thisMonth(); renderAll(); } }, 60000);
+
+  return {
+    budget, spendList, spendRead, spendAdd, billsList, billsRead, billsAdd, goalsList, goalsRead, goalsAdd, months, setup,
+    render: renderAll,
+    billsDue,
+    /** How full the savings jar in the depot looks (0..1), from the first goal. */
+    jarFill: () => { const g = data.goals[0]; if (!g || !g.target) return data.goals.length ? 0.5 : 0.1; return Math.max(0.05, Math.min(1, savedIn(g.id) / g.target)); },
+    /** @param {() => void} fn */
+    onRender: (fn) => { renderSide = fn; },
+  };
 }
 </script>
 </body>
