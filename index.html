@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vREzXekh7ACgIjl/hnfZ5q2muUyrfj9hPSOI9zFLbb8='; style-src 'sha256-pUn3vmNblrWNHurC2wp0EF2IF2ymXfxOsuegB3O6Mw4='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ruUrDNdJttiK9JXZrFAlgaIgAIabUuaRucpJGxR755A='; style-src 'sha256-emoD4nxjDVCzaAMcXqxwJIIC/LRDACEbsBx2+JCOny4='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -502,6 +502,8 @@ label.check, .steps label { font-size: 15px; }
 body.split-on main { grid-template-columns: minmax(0, 1fr); }
 body.split-on aside { display: none !important; }
 body.split-on .side-grip { display: none !important; }
+.sp-add { margin-left: auto; }
+.sp-add + .sp-menu { margin-left: 8px; }
 .sp-menu { margin-left: auto; }
 .bar .sp-menu { align-self: center; }
 .split {
@@ -570,7 +572,7 @@ html .split .panel + .panel { border-top: 1px dashed var(--edge); padding-top: 1
 
 @media (max-width: 820px) {
   body.split-on .space-wrap { height: calc(100svh - 56px); min-height: 360px; }
-  .split { position: fixed; inset: 0; z-index: 50; grid-template-columns: minmax(0, 1fr) !important; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .split { position: fixed; inset: var(--bar-h, 0px) 0 0 0; z-index: 50; grid-template-columns: minmax(0, 1fr) !important; padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); border-top: 2px solid var(--edge); }
   .split .sp-side, .split .sp-list, .split .sp-read, .split .sp-grip { display: none; }
   .split[data-level="0"] .sp-side { display: flex; }
   .split[data-level="1"] .sp-list { display: flex; }
@@ -634,8 +636,10 @@ button.linkish:focus-visible { outline: 2px solid var(--orange); }
 .mn-private { border-left: 2px solid var(--green); padding-left: 10px; color: var(--ink) !important; }
 .mn-sync { display: flex; flex-direction: column; gap: 6px; }
 @media (max-width: 820px) {
-  .bar .sp-menu { order: 2; }
+  .bar .sp-menu, .bar .sp-add { order: 2; }
   .bar .hint { order: 3; flex-basis: 100%; }
+  .bar h1 > span:not(.badge) { display: none; }
+  .bar { align-items: center; row-gap: 6px; }
 }
 </style>
 </head>
@@ -5294,6 +5298,25 @@ railApi = makeSplit({
     { id: 'go-orbit', place: 'depot', label: 'BACK TO ORBIT', blurb: 'Tasks, timer, inbox', go: 'main' },
   ],
 });
+
+// + TASK is always in the header, wherever you are.
+const quickAdd = document.createElement('button');
+quickAdd.type = 'button';
+quickAdd.className = 'primary sp-add';
+quickAdd.textContent = '+ TASK';
+quickAdd.title = 'Add a task (or press N)';
+function addTaskNow() {
+  railApi.open('tasks', 2);
+  openNewTask(selGroup() ? selGroup().id : null);
+  setTimeout(() => $('#n-title').focus({ preventScroll: true }), 60);
+}
+quickAdd.addEventListener('click', addTaskNow);
+const menuBtnEl = document.querySelector('.bar .sp-menu');
+if (menuBtnEl) menuBtnEl.before(quickAdd); else document.querySelector('.bar').append(quickAdd);
+document.addEventListener('keydown', (e) => {
+  const t = e.target;
+  if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey && !e.altKey && !(t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement)) { e.preventDefault(); addTaskNow(); }
+});
 })();
 
 // ---------------------------------------------------------------- wider side panel
@@ -5811,6 +5834,12 @@ function makeSplit(cfg) {
   function hideCard() { card.hidden = true; }
   document.addEventListener('pointerdown', (e) => { if (!card.hidden && e.target instanceof Node && !card.contains(e.target)) hideCard(); }, true);
 
+  // On phones the menu fills the screen under the header, so MENU and + TASK stay in reach.
+  const bar = document.querySelector('.bar');
+  const setBar = () => document.documentElement.style.setProperty('--bar-h', (bar ? Math.round(bar.getBoundingClientRect().bottom) : 0) + 'px');
+  if (bar) new ResizeObserver(setBar).observe(bar);
+  window.addEventListener('resize', setBar);
+  setBar();
   wide.addEventListener('change', apply);
   setInterval(() => { if (isOpen) renderSections(); }, 2000);
   apply();
