@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ruUrDNdJttiK9JXZrFAlgaIgAIabUuaRucpJGxR755A='; style-src 'sha256-emoD4nxjDVCzaAMcXqxwJIIC/LRDACEbsBx2+JCOny4='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tofYYkcxqA3Z2hu6K209lKVKs1HwNniTr2LZc3Gr3GQ='; style-src 'sha256-6FcM/rJPP9poWF6Rrh9TfjVh9lFVYKt668seJVdD5pQ='; img-src 'self'; manifest-src 'self'; connect-src https://ntfy.sh https://api.github.com; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Black Hole</title>
 <meta name="theme-color" content="#05040b">
@@ -570,8 +570,15 @@ html .split .panel + .panel { border-top: 1px dashed var(--edge); padding-top: 1
 .sp-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .sp-card-actions button { flex: 1 1 auto; padding: 7px 10px; font-size: 11px; }
 
+/* One screen, nothing to scroll: the menu and panels scroll inside themselves. */
+html:has(body.split-on), body.split-on { overflow: hidden; overscroll-behavior: none; }
+
 @media (max-width: 820px) {
-  body.split-on .space-wrap { height: calc(100svh - 56px); min-height: 360px; }
+  /* The page is exactly one screen: the header, then the scene filling the
+     rest. Nothing to scroll, and no rubber-band drag. */
+  html:has(body.split-on), body.split-on { height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+  body.split-on main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  body.split-on .space-wrap { flex: 1; height: auto; min-height: 0; }
   .split { position: fixed; inset: var(--bar-h, 0px) 0 0 0; z-index: 50; grid-template-columns: minmax(0, 1fr) !important; padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); border-top: 2px solid var(--edge); }
   .split .sp-side, .split .sp-list, .split .sp-read, .split .sp-grip { display: none; }
   .split[data-level="0"] .sp-side { display: flex; }
@@ -4233,7 +4240,7 @@ function drawScene(g, tm, dt) {
   labels.sort(heldFirst);
   sweepLabels(tm);
   // Labels also stay off every sprite and off the EVENT HORIZON caption.
-  const placed = [{ x: g.cx - 26, y: g.cy + g.inner + 2, w: 52, h: 7 }], drawn = [];
+  const placed = [{ x: g.cx - 26, y: g.cy + g.inner + 2, w: 52, h: state.tasks.some((t) => t.status === 'swallowed') ? 14 : 7 }], drawn = [];
   for (const q of pos.values()) {
     const rad = q.type === 'group' ? (spaceStyle.planets === 'ringed' ? 8 : 4) : 2;
     placed.push({ x: q.x - rad, y: q.y - rad, w: rad * 2 + 1, h: rad * 2 + 1 });
@@ -5156,14 +5163,53 @@ function drawOrbit(tm, dt) {
     dottedRing(g.cx, g.cy, g.inner, sun ? '#6b4a1a' : '#6b2632', 3);
   }
   const label = sun ? 'CORONA' : 'EVENT HORIZON';
-  drawText(label, g.cx - Math.floor(textWidth(label) / 2), g.cy + g.inner + 3, sun ? '#8a5a1f' : lensed ? '#3a2230' : '#6b2632');
+  // Tasks that fell in feed the hole: it swells, throbs and turns red, more
+  // with each one, until you rescue or clear them.
+  const inside = state.tasks.filter((t) => t.status === 'swallowed').length;
+  const fed = inside ? 1 - Math.pow(0.7, inside) : 0;          // 1: 0.3, 3: 0.66, 6: 0.88
+  const beatMs = 2600 - 1400 * fed;
+  const beat = inside ? Math.pow(Math.max(0, Math.sin((tm / beatMs) * Math.PI * 2)), 12) : 0;
+  const gc = inside ? Object.assign({}, g, { rH: Math.round(g.rH * (1 + 0.35 * fed) + beat * (1 + fed)) }) : g;
+  holeBox = inside ? { x: g.cx, y: g.cy, r: gc.rH + 3 } : null;
+  drawText(label, g.cx - Math.floor(textWidth(label) / 2), g.cy + g.inner + 3, inside ? shade('#6b2632', '#ff4d5e', fed) : sun ? '#8a5a1f' : lensed ? '#3a2230' : '#6b2632');
+  if (inside) {
+    const note = inside + ' INSIDE';
+    drawText(note, g.cx - Math.floor(textWidth(note) / 2), g.cy + g.inner + 10, Math.floor(tm / 700) % 2 ? '#ff4d5e' : '#c42a3c');
+  }
   drawOutpost();
-  drawCenter(g, tm);
+  if (inside) {
+    // A red glow that breathes with the beat.
+    const reach = gc.rH * (2.2 + 0.8 * fed);
+    for (let y = -reach; y <= reach; y++) {
+      for (let x = -reach; x <= reach; x++) {
+        const d = Math.hypot(x, y);
+        if (d < gc.rH + 2 || d > reach) continue;
+        const f = 1 - (d - gc.rH) / (reach - gc.rH);
+        if (hash2((x + 999) | 0, (y + 999) | 0) < f * f * (18 + 40 * fed + 30 * beat)) px(g.cx + x, g.cy + y, f > 0.55 ? '#7a0f1c' : '#3a0810');
+      }
+    }
+  }
+  drawCenter(gc, tm);
+  if (inside) {
+    // Turn the hole and its disk red: keep each pixel's brightness, take red's colour.
+    ctx.save();
+    ctx.globalCompositeOperation = 'color';
+    const a = Math.min(0.9, 0.9 * fed + 0.1 * beat);
+    const grad = ctx.createRadialGradient(g.cx, g.cy, gc.rH * 1.4, g.cx, g.cy, gc.rH * 3.6);
+    grad.addColorStop(0, 'rgba(255,31,61,' + a.toFixed(3) + ')');
+    grad.addColorStop(1, 'rgba(255,31,61,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(g.cx - gc.rH * 3.7, g.cy - gc.rH * 3.7, gc.rH * 7.4, gc.rH * 7.4);
+    ctx.restore();
+    if (holeHover) brackets(g.cx, g.cy, gc.rH + 5);
+  }
   drawScene(g, tm, dt);
   drawAnims(g, tm);
   drawCrew();
 }
 
+/** Where the fed hole is, so a click on it opens what fell in. */
+let holeBox = null, holeHover = false;
 const coarse = window.matchMedia('(pointer: coarse)').matches;
 function hit(e) {
   const r = canvas.getBoundingClientRect();
@@ -5181,6 +5227,7 @@ function hit(e) {
   }
   const o = outpost(); // otherwise: anywhere on the astronaut's planet
   if ((x - o.x) ** 2 + (y - o.y) ** 2 <= o.r * o.r) return { type: 'outpost', id: 'outpost' };
+  if (holeBox && (x - holeBox.x) ** 2 + (y - holeBox.y) ** 2 <= holeBox.r * holeBox.r) return { type: 'hole', id: 'hole' };
   return null;
 }
 // The warehouse opens in the desktop app; the web version explains where it is.
@@ -5206,6 +5253,7 @@ canvas.addEventListener('click', (e) => {
     return;
   }
   if (h && h.type === 'astro') { if (railApi) railApi.open('timer'); return; }
+  if (h && h.type === 'hole') { if (railApi) railApi.open('tasks', 1); const lp = $('#lost-panel'); if (lp && !lp.hidden) reveal(lp, { block: 'start' }); return; }
   if (h && h.type === 'outpost') { zoomTo('outpost'); return; }
   if (h && h.type === 'group') { if (!isSel('group', h.id)) select('group', h.id); zoomTo(h.id); return; }
   if (h && h.type === 'task' && railApi) { taskCard(h.id, e); return; }
@@ -5228,7 +5276,7 @@ function taskCard(id, e) {
 }
 canvas.addEventListener('mousemove', (e) => {
   if (depotIn) { depotHover = depotHit(e); canvas.style.cursor = depotHover ? 'pointer' : 'default'; return; }
-  hover = hit(e); canvas.style.cursor = hover ? 'pointer' : 'default';
+  hover = hit(e); holeHover = !!(hover && hover.type === 'hole'); canvas.style.cursor = hover ? 'pointer' : 'default';
 });
 canvas.addEventListener('mouseleave', () => { hover = null; });
 
